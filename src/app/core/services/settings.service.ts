@@ -1,7 +1,7 @@
 // src/app/core/services/settings.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
@@ -20,15 +20,18 @@ export interface AppSettings {
 export class SettingsService {
   private apiUrl = environment.apiUrl || 'http://localhost:3000/api';
 
-  private settingsSubject = new BehaviorSubject<AppSettings>({
+  private defaultSettings: AppSettings = {
     autoCycle: true,
     cycleInterval: 15,
     showVolume: true,
     enableNotifications: false,
     theme: 'light',
     defaultTimeRange: '5D',
-  });
+  };
 
+  private settingsSubject = new BehaviorSubject<AppSettings>(
+    this.defaultSettings
+  );
   public settings$ = this.settingsSubject.asObservable();
 
   constructor(private http: HttpClient) {
@@ -37,32 +40,35 @@ export class SettingsService {
 
   // Load settings from backend
   private loadSettings(): void {
-    this.getSettings().subscribe({
+    this.fetchSettings().subscribe({
       next: (settings) => {
         this.settingsSubject.next(settings);
       },
       error: (error) => {
         console.error('Error loading settings:', error);
-        // Use default settings on error
       },
     });
   }
 
-  // Get settings from SQLite backend
-  getSettings(userId: string = 'default'): Observable<AppSettings> {
+  private fetchSettings(userId: string = 'default'): Observable<AppSettings> {
     return this.http
       .get<AppSettings>(`${this.apiUrl}/config/settings/${userId}`)
       .pipe(
         tap((settings) => {
           console.log('Settings loaded:', settings);
-          this.settingsSubject.next(settings);
         }),
         catchError((error) => {
           console.error('Error fetching settings:', error);
-          // Return current settings as fallback
-          return [this.settingsSubject.value];
+          return of(this.defaultSettings);
         })
       );
+  }
+
+  // Get settings from SQLite backend
+  getSettings(userId: string = 'default'): Observable<AppSettings> {
+    return this.fetchSettings(userId).pipe(
+      tap((settings) => this.settingsSubject.next(settings))
+    );
   }
 
   // Update settings in SQLite backend

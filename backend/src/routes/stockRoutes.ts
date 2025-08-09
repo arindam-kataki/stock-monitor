@@ -1,4 +1,3 @@
-// backend/src/routes/stockRoutes.ts
 import { Router, Request, Response } from 'express';
 import stockDb from '../services/sqliteService';
 

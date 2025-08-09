@@ -15,6 +15,8 @@ import {
   AppSettings,
 } from '../../core/services/settings.service';
 import { Category } from '../../core/models/stock.models';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-configuration',
@@ -30,6 +32,8 @@ import { Category } from '../../core/models/stock.models';
     MatIconModule,
     MatBadgeModule,
     MatProgressSpinnerModule,
+    MatInputModule,
+    MatFormFieldModule,
   ],
   templateUrl: './configuration.html',
   styleUrl: './configuration.scss',
@@ -45,6 +49,9 @@ export class ConfigurationComponent implements OnInit {
   selectedCounts: { [categoryId: string]: number } = {};
   loading = true;
   error: string | null = null;
+  editingCategoryId: string | null = null;
+  editingCategoryName: string = '';
+  originalCategoryName: string = '';
 
   constructor(
     private stockDataService: StockDataService,
@@ -57,10 +64,21 @@ export class ConfigurationComponent implements OnInit {
     console.log('ConfigurationComponent ngOnInit');
     this.loadSettings();
     this.loadCategories();
+    this.stockDataService.loadUserSelections();
   }
 
   loadSettings(): void {
-    this.settings = this.settingsService.getSettings();
+    // Fix: Subscribe to the Observable
+    this.settingsService.getSettings().subscribe({
+      next: (settings) => {
+        this.settings = settings;
+        console.log('Loaded settings:', this.settings);
+      },
+      error: (error) => {
+        console.error('Error loading settings:', error);
+        // Keep default settings on error
+      },
+    });
   }
 
   loadCategories(): void {
@@ -105,5 +123,67 @@ export class ConfigurationComponent implements OnInit {
 
   formatLabel(value: number): string {
     return `${value}s`;
+  }
+
+  startEditingCategory(category: Category): void {
+    this.editingCategoryId = category.id;
+    this.editingCategoryName = category.name;
+    this.originalCategoryName = category.name;
+  }
+
+  saveCategory(): void {
+    if (this.editingCategoryId && this.editingCategoryName.trim()) {
+      const category = this.categories.find(
+        (c) => c.id === this.editingCategoryId
+      );
+      if (category) {
+        // Update locally
+        category.name = this.editingCategoryName.trim();
+
+        // Call service to update backend
+        this.stockDataService
+          .updateCategoryName(
+            this.editingCategoryId,
+            this.editingCategoryName.trim()
+          )
+          .subscribe({
+            next: () => {
+              console.log('Category renamed successfully');
+            },
+            error: (error) => {
+              console.error('Error renaming category:', error);
+              // Revert on error
+              category.name = this.originalCategoryName;
+            },
+          });
+      }
+    }
+    this.cancelEditing();
+  }
+
+  cancelEditing(): void {
+    // Revert changes if cancelled
+    if (this.editingCategoryId) {
+      const category = this.categories.find(
+        (c) => c.id === this.editingCategoryId
+      );
+      if (category && this.originalCategoryName) {
+        category.name = this.originalCategoryName;
+      }
+    }
+
+    this.editingCategoryId = null;
+    this.editingCategoryName = '';
+    this.originalCategoryName = '';
+  }
+
+  onEditKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.saveCategory();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelEditing();
+    }
   }
 }

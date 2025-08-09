@@ -22,6 +22,20 @@ export interface Category {
   color?: string;
   order_index: number;
   is_active: boolean;
+  stocks: Stock[];
+}
+
+// Also add the Stock interface if it doesn't exist
+export interface Stock {
+  symbol: string;
+  name: string;
+  price: number;
+  previousClose: number;
+  change: number;
+  changePercent: number;
+  volume: number;
+  marketCap?: string;
+  sector?: string;
 }
 
 export interface StockMetadata {
@@ -32,6 +46,30 @@ export interface StockMetadata {
   sector?: string;
   description?: string;
   is_active: boolean;
+}
+
+interface CategoryRow {
+  id: string;
+  name: string;
+  icon: string;
+  description: string | null; // SQLite returns null, not undefined
+  color: string | null;
+  order_index: number;
+  is_active: number; // SQLite stores boolean as 0/1
+  created_at: string;
+  updated_at: string;
+}
+
+interface StockRow {
+  symbol: string;
+  name: string;
+  category_id: string;
+  market_cap: string | null;
+  sector: string | null;
+  description: string | null;
+  is_active: number; // SQLite stores boolean as 0/1
+  created_at: string;
+  updated_at: string;
 }
 
 export class StockDatabase {
@@ -468,8 +506,8 @@ export class StockDatabase {
   // ============ CONFIGURATION METHODS ============
 
   // Get all categories with their stocks
-  getAllCategories(): any[] {
-    const categories = this.db
+  getAllCategories(): Category[] {
+    const categoryRows = this.db
       .prepare(
         `
       SELECT * FROM categories 
@@ -477,20 +515,41 @@ export class StockDatabase {
       ORDER BY order_index, name
     `
       )
-      .all();
+      .all() as CategoryRow[];
 
-    const getStocks = this.db.prepare(`
+    const getStocksStmt = this.db.prepare(`
       SELECT * FROM stock_metadata 
       WHERE category_id = ? AND is_active = 1
       ORDER BY symbol
     `);
 
-    return categories.map((category) => ({
-      ...category,
-      stocks: getStocks.all(category.id),
-    }));
-  }
+    return categoryRows.map((row: CategoryRow): Category => {
+      const stockRows = getStocksStmt.all(row.id) as StockRow[];
 
+      return {
+        id: row.id,
+        name: row.name,
+        icon: row.icon,
+        description: row.description || undefined,
+        color: row.color || undefined,
+        order_index: row.order_index,
+        is_active: row.is_active === 1,
+        stocks: stockRows.map(
+          (stockRow): Stock => ({
+            symbol: stockRow.symbol,
+            name: stockRow.name,
+            price: 0,
+            previousClose: 0,
+            change: 0,
+            changePercent: 0,
+            volume: 0,
+            marketCap: stockRow.market_cap || undefined,
+            sector: stockRow.sector || undefined,
+          })
+        ),
+      };
+    });
+  }
   // Insert or update category
   upsertCategory(category: Category): void {
     this.db
@@ -510,6 +569,18 @@ export class StockDatabase {
         category.order_index,
         category.is_active ? 1 : 0
       );
+  }
+
+  updateCategoryName(categoryId: string, newName: string): any {
+    return this.db
+      .prepare(
+        `
+        UPDATE categories 
+        SET name = ?, updated_at = datetime('now')
+        WHERE id = ?
+      `
+      )
+      .run(newName, categoryId);
   }
 
   // Insert or update stock metadata

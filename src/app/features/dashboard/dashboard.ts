@@ -31,12 +31,17 @@ import { Subscription, interval } from 'rxjs';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   categories: Category[] = [];
+  settings: AppSettings = {
+    autoCycle: true,
+    cycleInterval: 15,
+    showVolume: true,
+    enableNotifications: false,
+  };
   currentCategoryIndex = 0;
   currentCategory: Category | null = null;
   selectedStocks: any[] = [];
-  settings: AppSettings;
 
-  timeRanges = ['1D', '5D', '1M', '6M', '1Y'];
+  timeRanges = ['1D', '5D', '1M', '6M', '1Y', '5Y'];
   selectedTimeRange = '5D';
 
   cycleSubscription?: Subscription;
@@ -47,9 +52,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     private stockDataService: StockDataService,
     private settingsService: SettingsService
-  ) {
-    this.settings = this.settingsService.getSettings();
-  }
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -61,6 +64,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadData(): void {
+    // Load categories
     this.stockDataService.getCategories().subscribe({
       next: (categories) => {
         this.categories = categories;
@@ -75,7 +79,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
     });
 
-    // Subscribe to settings changes
+    // Subscribe to settings changes - FIX HERE
     this.settingsService.settings$.subscribe((settings) => {
       this.settings = settings;
       if (settings.autoCycle && !this.isAutoCycling) {

@@ -14,6 +14,28 @@ router.get('/categories', (req: Request, res: Response) => {
   }
 });
 
+// Update category name
+router.put('/categories/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+  
+  try {
+    // First check if we need to add the method to stockDb
+    const result = stockDb.updateCategoryName(id, name.trim());
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update category name' });
+  }
+});
+
 // Get user selections
 router.get('/selections/:userId?', (req: Request, res: Response) => {
   try {

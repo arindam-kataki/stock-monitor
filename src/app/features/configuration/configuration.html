@@ -31,7 +31,25 @@
         <div class="category-header">
           <span class="category-title">
             <span class="category-icon">{{ category.icon }}</span>
-            {{ category.name }}
+
+            <!-- Conditional rendering: Show input when editing, otherwise show name -->
+            <span
+              *ngIf="editingCategoryId !== category.id"
+              class="category-name-text"
+              (click)="startEditingCategory(category)"
+              title="Click to rename"
+            >
+              {{ category.name }}
+            </span>
+            <input
+              *ngIf="editingCategoryId === category.id"
+              type="text"
+              class="category-name-input"
+              [(ngModel)]="editingCategoryName"
+              (keydown)="onEditKeydown($event)"
+              (blur)="saveCategory()"
+              #nameInput
+            />
           </span>
           <span
             class="selected-count"

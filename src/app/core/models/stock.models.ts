@@ -1,3 +1,4 @@
+// src/app/core/models/stock.models.ts
 export interface Stock {
   symbol: string;
   name: string;
@@ -9,6 +10,19 @@ export interface Stock {
   marketCap?: number;
   dayHigh?: number;
   dayLow?: number;
+  yearHigh?: number;
+  yearLow?: number;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  description?: string;
+  color?: string;
+  order_index?: number;
+  is_active?: boolean;
+  stocks: Stock[];
 }
 
 export interface StockData {
@@ -18,14 +32,6 @@ export interface StockData {
   low: number;
   close: number;
   volume: number;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  stocks: Stock[];
-  selected?: boolean;
 }
 
 export enum TimeRange {

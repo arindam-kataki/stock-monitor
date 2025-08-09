@@ -32,6 +32,18 @@ export class ConfigurationService {
     }));
   }
 
+  updateCategoryName(categoryId: string, newName: string) {
+    return this.db
+      .prepare(
+        `
+        UPDATE categories 
+        SET name = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `
+      )
+      .run(newName, categoryId);
+  }
+
   // Get user's selected stocks
   getUserSelections(userId = 'default') {
     return this.db

@@ -22,13 +22,13 @@ app.use('/api/config', configRoutes);
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
   const stats = stockDb.getDatabaseStats();
-  res.json({
-    status: 'OK',
+  res.json({ 
+    status: 'OK', 
     message: 'Server is running with SQLite',
     database: {
       totalStocks: stats.totalStocks.count,
-      size: stats.databaseSize,
-    },
+      size: stats.databaseSize
+    }
   });
 });
 

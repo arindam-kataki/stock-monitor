@@ -83,6 +83,32 @@
         .category-icon {
           font-size: 24px;
         }
+
+        .category-name-text {
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+
+          &:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+          }
+        }
+
+        .category-name-input {
+          font-size: 20px;
+          font-weight: 600;
+          padding: 4px 8px;
+          border: 2px solid #667eea;
+          border-radius: 4px;
+          outline: none;
+          background: white;
+          min-width: 150px;
+
+          &:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+          }
+        }
       }
 
       .selected-count {
