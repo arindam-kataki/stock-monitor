@@ -1,8 +1,10 @@
+// backend/src/server.ts
 import express, { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import categoryRoutes from './routes/categoryRoutes';
+import stockRoutes from './routes/stockRoutes';
+import configRoutes from './routes/configRoutes';
+import stockDb from './services/sqliteService';
 
 dotenv.config();
 
@@ -14,25 +16,31 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/categories', categoryRoutes);
+app.use('/api', stockRoutes);
+app.use('/api/config', configRoutes);
 
-// Health check with proper types
+// Health check
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  const stats = stockDb.getDatabaseStats();
+  res.json({
+    status: 'OK',
+    message: 'Server is running with SQLite',
+    database: {
+      totalStocks: stats.totalStocks.count,
+      size: stats.databaseSize,
+    },
+  });
 });
 
-// MongoDB connection
-const MONGODB_URI =
-  process.env.MONGODB_URI || 'mongodb://localhost:27017/stock_monitor';
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log('Database: SQLite (stocks.db)');
+});
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-  });
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\nShutting down gracefully...');
+  stockDb.close();
+  process.exit(0);
+});

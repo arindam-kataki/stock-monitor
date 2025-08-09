@@ -5,9 +5,11 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "nodemon",
+    "dev": "npx nodemon",
     "build": "tsc",
-    "seed": "ts-node src/seed/seedDatabase.ts"
+    "seed": "ts-node src/seed/seedSQLite.ts",
+    "clean:db": "rm -f data/stocks.db && npm run seed",
+    "test": "ts-node src/test/testSQLite.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
