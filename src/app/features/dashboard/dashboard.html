@@ -1,1 +1,116 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Loading dashboard...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!loading" class="dashboard-content">
+    <!-- Category Sidebar -->
+    <div class="category-sidebar">
+      <h3>Categories</h3>
+      <div
+        *ngFor="let category of categories; let i = index"
+        class="category-item"
+        [class.active]="i === currentCategoryIndex"
+        (click)="manualSelectCategory(i)"
+      >
+        <span class="category-icon">{{ category.icon }}</span>
+        <span class="category-name">{{ category.name }}</span>
+        <div
+          class="cycle-indicator"
+          *ngIf="i === currentCategoryIndex && isAutoCycling"
+        >
+          <mat-icon class="pulse">fiber_manual_record</mat-icon>
+        </div>
+      </div>
+
+      <!-- Auto-cycle Controls -->
+      <div class="cycle-controls">
+        <button
+          mat-button
+          (click)="isAutoCycling ? stopAutoCycle() : startAutoCycle()"
+        >
+          <mat-icon>{{ isAutoCycling ? "pause" : "play_arrow" }}</mat-icon>
+          {{ isAutoCycling ? "Pause" : "Resume" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Chart Area -->
+    <div class="chart-area">
+      <!-- Header -->
+      <div class="chart-header">
+        <div class="header-left">
+          <h2 *ngIf="currentCategory">
+            {{ currentCategory.icon }} {{ currentCategory.name }} Stocks
+          </h2>
+          <span
+            class="status-badge"
+            [class.auto]="isAutoCycling"
+            [class.manual]="!isAutoCycling"
+          >
+            {{ isAutoCycling ? "AUTO-CYCLING" : "MANUAL" }}
+          </span>
+        </div>
+
+        <!-- Time Range Selector -->
+        <div class="time-range-selector">
+          <button
+            *ngFor="let range of timeRanges"
+            mat-button
+            [class.active]="range === selectedTimeRange"
+            (click)="selectTimeRange(range)"
+          >
+            {{ range }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Stock Charts Grid -->
+      <div class="stock-charts-grid">
+        <mat-card *ngFor="let stock of selectedStocks" class="stock-chart-card">
+          <mat-card-header>
+            <div class="stock-header">
+              <div class="stock-info">
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-name">{{ stock.name }}</span>
+              </div>
+              <div class="stock-price">${{ getMockPrice() }}</div>
+            </div>
+          </mat-card-header>
+
+          <!-- Replace the mock chart section with this: -->
+          <mat-card-content>
+            <div
+              class="price-change"
+              [class.positive]="getMockChange() > 0"
+              [class.negative]="getMockChange() < 0"
+            >
+              <mat-icon>{{
+                getMockChange() > 0 ? "trending_up" : "trending_down"
+              }}</mat-icon>
+              {{ getMockChange().toFixed(2) }}%
+            </div>
+
+            <!-- Real Chart Component -->
+            <app-stock-chart
+              [symbol]="stock.symbol"
+              [timeRange]="selectedTimeRange"
+              [chartType]="'line'"
+            >
+            </app-stock-chart>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- No Stocks Selected Message -->
+        <div *ngIf="selectedStocks.length === 0" class="no-stocks">
+          <mat-icon>info</mat-icon>
+          <p>No stocks selected for this category.</p>
+          <p>Go to Configuration to select stocks.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

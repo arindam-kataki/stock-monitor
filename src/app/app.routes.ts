@@ -1,3 +1,4 @@
+// src/app/app.routes.ts
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
@@ -8,17 +9,18 @@ export const routes: Routes = [
   },
   {
     path: 'configuration',
-    loadComponent: () => import('./features/configuration/configuration.component')
-      .then(m => m.ConfigurationComponent)
+    loadComponent: () => import('./features/configuration/configuration').then(m => m.ConfigurationComponent)
   },
   {
     path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component')
-      .then(m => m.DashboardComponent)
+    loadComponent: () => import('./features/dashboard/dashboard').then(m => m.DashboardComponent)
   },
   {
     path: 'analytics',
-    loadComponent: () => import('./features/analytics/analytics.component')
-      .then(m => m.AnalyticsComponent)
+    loadComponent: () => import('./features/analytics/analytics').then(m => m.AnalyticsComponent)
+  },
+  {
+    path: '**',
+    redirectTo: '/configuration'
   }
 ];

@@ -1,1 +1,19 @@
-<p>navigation works!</p>
+<!-- src/app/shared/navigation/navigation.html -->
+<nav class="navigation">
+  <div class="nav-header">
+    <mat-icon class="logo">show_chart</mat-icon>
+    <h1>Stock Monitor Pro</h1>
+  </div>
+
+  <div class="nav-tabs">
+    <button
+      *ngFor="let item of navItems"
+      class="nav-tab"
+      [class.active]="isActive(item.path)"
+      (click)="navigate(item.path)"
+    >
+      <mat-icon>{{ item.icon }}</mat-icon>
+      <span>{{ item.label }}</span>
+    </button>
+  </div>
+</nav>

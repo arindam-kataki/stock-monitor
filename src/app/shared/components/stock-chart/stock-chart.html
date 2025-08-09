@@ -1,0 +1,6 @@
+<div class="chart-container">
+  <div *ngIf="loading" class="chart-loading">
+    <mat-spinner diameter="30"></mat-spinner>
+  </div>
+  <canvas #chartCanvas [style.display]="loading ? 'none' : 'block'"></canvas>
+</div>

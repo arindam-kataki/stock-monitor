@@ -1,1 +1,116 @@
-<p>configuration works!</p>
+<div class="configuration-container">
+  <h2>Stock Selection & Categories</h2>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Loading categories...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error-message">
+    <mat-icon>error</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadCategories()">
+      Retry
+    </button>
+  </div>
+
+  <!-- Stock Categories -->
+  <div *ngIf="!loading && !error" class="categories-section">
+    <div *ngIf="categories.length === 0" class="no-data">
+      <p>
+        No categories found. Make sure the backend is running and database is
+        seeded.
+      </p>
+      <code>cd backend && npm run seed</code>
+    </div>
+
+    <mat-card *ngFor="let category of categories" class="category-card">
+      <mat-card-header>
+        <div class="category-header">
+          <span class="category-title">
+            <span class="category-icon">{{ category.icon }}</span>
+            {{ category.name }}
+          </span>
+          <span
+            class="selected-count"
+            [class.has-selection]="selectedCounts[category.id] > 0"
+          >
+            {{ selectedCounts[category.id] || 0 }} selected
+          </span>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="stock-grid">
+          <div
+            *ngFor="let stock of category.stocks"
+            class="stock-item"
+            [class.selected]="isSelected(category.id, stock.symbol)"
+            (click)="toggleStock(category.id, stock.symbol)"
+          >
+            <div class="stock-symbol">{{ stock.symbol }}</div>
+            <div class="stock-name">{{ stock.name }}</div>
+            <mat-icon
+              class="check-icon"
+              *ngIf="isSelected(category.id, stock.symbol)"
+            >
+              check_circle
+            </mat-icon>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Settings Section -->
+  <mat-card
+    *ngIf="!loading && !error && categories.length > 0"
+    class="settings-card"
+  >
+    <mat-card-header>
+      <mat-card-title>Display Settings</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="setting-item">
+        <span>Auto-cycle Categories</span>
+        <mat-slide-toggle
+          [(ngModel)]="settings.autoCycle"
+          (change)="onSettingChange()"
+        >
+        </mat-slide-toggle>
+      </div>
+
+      <div class="setting-item">
+        <span>Cycle Speed: {{ settings.cycleInterval }}s</span>
+        <mat-slider min="5" max="60" step="5" class="cycle-slider">
+          <input
+            matSliderThumb
+            [(ngModel)]="settings.cycleInterval"
+            (ngModelChange)="onSettingChange()"
+          />
+        </mat-slider>
+      </div>
+
+      <div class="setting-item">
+        <span>Show Volume Data</span>
+        <mat-slide-toggle
+          [(ngModel)]="settings.showVolume"
+          (change)="onSettingChange()"
+        >
+        </mat-slide-toggle>
+      </div>
+
+      <div class="setting-item">
+        <span>Enable Notifications</span>
+        <mat-slide-toggle
+          [(ngModel)]="settings.enableNotifications"
+          (change)="onSettingChange()"
+        >
+        </mat-slide-toggle>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
