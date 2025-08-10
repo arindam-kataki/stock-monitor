@@ -1,133 +1,273 @@
+<!-- src/app/features/configuration/configuration.html -->
+
 <div class="configuration-container">
-  <h2>Stock Selection & Categories</h2>
-
-  <!-- Loading Spinner -->
-  <div *ngIf="loading" class="loading-container">
-    <mat-spinner></mat-spinner>
-    <p>Loading categories...</p>
-  </div>
-
-  <!-- Error Message -->
-  <div *ngIf="error" class="error-message">
-    <mat-icon>error</mat-icon>
-    <p>{{ error }}</p>
-    <button mat-raised-button color="primary" (click)="loadCategories()">
-      Retry
+  <!-- Header Section -->
+  <div class="page-header">
+    <h2>Stock Monitor Configuration</h2>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="openAddRibbonDialog()"
+      [disabled]="loading"
+    >
+      <mat-icon>add</mat-icon>
+      Add New Ribbon
     </button>
   </div>
 
-  <!-- Stock Categories -->
-  <div *ngIf="!loading && !error" class="categories-section">
-    <div *ngIf="categories.length === 0" class="no-data">
-      <p>
-        No categories found. Make sure the backend is running and database is
-        seeded.
-      </p>
-      <code>cd backend && npm run seed</code>
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Loading configuration...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-message">
+    <mat-icon>error</mat-icon>
+    <div>
+      <p>{{ error }}</p>
+      <p>Make sure the backend is running and database is seeded.</p>
+      <code>cd backend && npm run dev</code>
+    </div>
+  </div>
+
+  <!-- Ribbons Section -->
+  <div class="ribbons-section" *ngIf="!loading && !error">
+    <div class="section-header">
+      <h3>
+        <mat-icon>dashboard</mat-icon>
+        Your Dashboard Ribbons
+      </h3>
+      <span class="ribbon-stats">
+        {{ getActiveRibbonCount() }} active ribbons |
+        {{ getTotalStockCount() }} total stocks
+      </span>
     </div>
 
-    <mat-card *ngFor="let category of categories" class="category-card">
-      <mat-card-header>
-        <div class="category-header">
-          <span class="category-title">
-            <span class="category-icon">{{ category.icon }}</span>
-
-            <!-- Conditional rendering: Show input when editing, otherwise show name -->
-            <span
-              *ngIf="editingCategoryId !== category.id"
-              class="category-name-text"
-              (click)="startEditingCategory(category)"
-              title="Click to rename"
-            >
-              {{ category.name }}
-            </span>
-            <input
-              *ngIf="editingCategoryId === category.id"
-              type="text"
-              class="category-name-input"
-              [(ngModel)]="editingCategoryName"
-              (keydown)="onEditKeydown($event)"
-              (blur)="saveCategory()"
-              #nameInput
-            />
-          </span>
-          <span
-            class="selected-count"
-            [class.has-selection]="selectedCounts[category.id] > 0"
-          >
-            {{ selectedCounts[category.id] || 0 }} selected
-          </span>
+    <!-- Ribbons List with Drag & Drop -->
+    <div
+      cdkDropList
+      class="ribbons-list"
+      (cdkDropListDropped)="dropRibbon($event)"
+      *ngIf="ribbons.length > 0"
+    >
+      <mat-card
+        *ngFor="let ribbon of ribbons; let i = index"
+        class="ribbon-card"
+        [class.inactive]="!ribbon.isActive"
+        cdkDrag
+      >
+        <!-- Drag Preview -->
+        <div class="ribbon-drag-preview" *cdkDragPreview>
+          <mat-card class="ribbon-card-preview">
+            {{ ribbon.icon }} {{ ribbon.name }}
+          </mat-card>
         </div>
-      </mat-card-header>
 
-      <mat-card-content>
-        <div class="stock-grid">
-          <div
-            *ngFor="let stock of category.stocks"
-            class="stock-item"
-            [class.selected]="isSelected(category.id, stock.symbol)"
-            (click)="toggleStock(category.id, stock.symbol)"
-          >
-            <div class="stock-symbol">{{ stock.symbol }}</div>
-            <div class="stock-name">{{ stock.name }}</div>
-            <mat-icon
-              class="check-icon"
-              *ngIf="isSelected(category.id, stock.symbol)"
-            >
-              check_circle
-            </mat-icon>
+        <mat-card-header>
+          <div class="ribbon-header">
+            <div class="ribbon-left">
+              <!-- Drag Handle -->
+              <mat-icon
+                cdkDragHandle
+                class="drag-handle"
+                matTooltip="Drag to reorder"
+              >
+                drag_indicator
+              </mat-icon>
+
+              <!-- Ribbon Icon -->
+              <span class="ribbon-icon">{{ ribbon.icon }}</span>
+
+              <!-- Editable Ribbon Name -->
+              <span
+                *ngIf="editingRibbonId !== ribbon.id"
+                class="ribbon-name"
+                (click)="startEditingRibbon(ribbon)"
+                matTooltip="Click to rename"
+              >
+                {{ ribbon.name }}
+              </span>
+
+              <input
+                *ngIf="editingRibbonId === ribbon.id"
+                type="text"
+                class="ribbon-name-input"
+                [(ngModel)]="editingRibbonName"
+                (keydown)="onEditKeydown($event)"
+                (blur)="saveRibbonName()"
+                #ribbonNameInput
+              />
+
+              <!-- Category Badge -->
+              <mat-chip class="category-badge">
+                {{ getCategoryName(ribbon.categoryId) }}
+              </mat-chip>
+
+              <!-- Active Toggle -->
+              <mat-slide-toggle
+                [(ngModel)]="ribbon.isActive"
+                (change)="toggleRibbonActive(ribbon)"
+                matTooltip="Toggle ribbon active/inactive"
+                class="ribbon-toggle"
+              ></mat-slide-toggle>
+            </div>
+
+            <div class="ribbon-actions">
+              <!-- Stock Count -->
+              <span class="selected-count">
+                <mat-icon>show_chart</mat-icon>
+                {{ ribbon.selectedStocks.length }} stocks
+              </span>
+
+              <!-- Action Buttons -->
+              <button
+                mat-icon-button
+                (click)="editRibbonStocks(ribbon)"
+                matTooltip="Edit stocks"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <button
+                mat-icon-button
+                (click)="duplicateRibbon(ribbon)"
+                matTooltip="Duplicate ribbon"
+              >
+                <mat-icon>content_copy</mat-icon>
+              </button>
+
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="deleteRibbon(ribbon)"
+                matTooltip="Delete ribbon"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
           </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+        </mat-card-header>
+
+        <mat-card-content>
+          <!-- Selected Stocks Preview -->
+          <div class="selected-stocks-preview">
+            <mat-chip
+              *ngFor="let symbol of ribbon.selectedStocks.slice(0, 10)"
+              class="stock-chip"
+            >
+              {{ symbol }}
+            </mat-chip>
+            <mat-chip
+              *ngIf="ribbon.selectedStocks.length > 10"
+              class="more-stocks-chip"
+            >
+              +{{ ribbon.selectedStocks.length - 10 }} more
+            </mat-chip>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="ribbons.length === 0 && !loading" class="empty-state">
+      <mat-icon class="empty-icon">dashboard_customize</mat-icon>
+      <h3>No ribbons configured yet</h3>
+      <p>Create your first ribbon to start monitoring stocks</p>
+      <button mat-raised-button color="primary" (click)="openAddRibbonDialog()">
+        <mat-icon>add</mat-icon>
+        Create Your First Ribbon
+      </button>
+    </div>
   </div>
 
   <!-- Settings Section -->
-  <mat-card
-    *ngIf="!loading && !error && categories.length > 0"
-    class="settings-card"
-  >
+  <mat-card *ngIf="!loading && !error" class="settings-card">
     <mat-card-header>
-      <mat-card-title>Display Settings</mat-card-title>
+      <mat-card-title>
+        <mat-icon>settings</mat-icon>
+        Display Settings
+      </mat-card-title>
     </mat-card-header>
 
     <mat-card-content>
-      <div class="setting-item">
-        <span>Auto-cycle Categories</span>
-        <mat-slide-toggle
-          [(ngModel)]="settings.autoCycle"
-          (change)="onSettingChange()"
-        >
-        </mat-slide-toggle>
+      <div class="settings-grid">
+        <!-- Auto-cycle Setting -->
+        <div class="setting-item">
+          <div class="setting-label">
+            <mat-icon>loop</mat-icon>
+            <span>Auto-cycle Ribbons</span>
+          </div>
+          <mat-slide-toggle
+            [(ngModel)]="settings.autoCycle"
+            (change)="onSettingChange()"
+          ></mat-slide-toggle>
+        </div>
+
+        <!-- Cycle Interval -->
+        <div class="setting-item">
+          <div class="setting-label">
+            <mat-icon>timer</mat-icon>
+            <span>Cycle Speed: {{ settings.cycleInterval }}s</span>
+          </div>
+          <mat-slider min="5" max="60" step="5" class="cycle-slider">
+            <input
+              matSliderThumb
+              [(ngModel)]="settings.cycleInterval"
+              (ngModelChange)="onSettingChange()"
+            />
+          </mat-slider>
+        </div>
+
+        <!-- Show Volume -->
+        <div class="setting-item">
+          <div class="setting-label">
+            <mat-icon>bar_chart</mat-icon>
+            <span>Show Volume Data</span>
+          </div>
+          <mat-slide-toggle
+            [(ngModel)]="settings.showVolume"
+            (change)="onSettingChange()"
+          ></mat-slide-toggle>
+        </div>
+
+        <!-- Enable Notifications -->
+        <div class="setting-item">
+          <div class="setting-label">
+            <mat-icon>notifications</mat-icon>
+            <span>Enable Notifications</span>
+          </div>
+          <mat-slide-toggle
+            [(ngModel)]="settings.enableNotifications"
+            (change)="onSettingChange()"
+          ></mat-slide-toggle>
+        </div>
       </div>
 
-      <div class="setting-item">
-        <span>Cycle Speed: {{ settings.cycleInterval }}s</span>
-        <mat-slider min="5" max="60" step="5" class="cycle-slider">
+      <!-- Export/Import Section -->
+      <div class="export-import-section">
+        <h4>Configuration Management</h4>
+        <div class="export-import-buttons">
+          <button mat-stroked-button (click)="exportConfiguration()">
+            <mat-icon>download</mat-icon>
+            Export Configuration
+          </button>
+
+          <button
+            mat-stroked-button
+            onclick="document.getElementById('importFile').click()"
+          >
+            <mat-icon>upload</mat-icon>
+            Import Configuration
+          </button>
           <input
-            matSliderThumb
-            [(ngModel)]="settings.cycleInterval"
-            (ngModelChange)="onSettingChange()"
+            type="file"
+            id="importFile"
+            style="display: none"
+            accept=".json"
+            (change)="importConfiguration($event)"
           />
-        </mat-slider>
-      </div>
-
-      <div class="setting-item">
-        <span>Show Volume Data</span>
-        <mat-slide-toggle
-          [(ngModel)]="settings.showVolume"
-          (change)="onSettingChange()"
-        >
-        </mat-slide-toggle>
-      </div>
-
-      <div class="setting-item">
-        <span>Enable Notifications</span>
-        <mat-slide-toggle
-          [(ngModel)]="settings.enableNotifications"
-          (change)="onSettingChange()"
-        >
-        </mat-slide-toggle>
+        </div>
       </div>
     </mat-card-content>
   </mat-card>

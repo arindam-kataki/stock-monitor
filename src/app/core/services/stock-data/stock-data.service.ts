@@ -1,35 +1,17 @@
+// src/app/core/services/stock-data/stock-data.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
-// Import from models instead of defining here
-import { Category, Stock } from '../../models/stock.models';
-
-// Remove the duplicate interface definitions (Stock, Category)
-// Keep only these additional interfaces:
-export interface ChartData {
-  symbol: string;
-  range: string;
-  count: number;
-  data: Array<{
-    date?: string;
-    timestamp?: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-  }>;
-}
-
-export interface UserSelection {
-  category_id: string;
-  symbol: string;
-  stock_name: string;
-  category_name: string;
-  category_icon: string;
-}
+import {
+  Stock,
+  Category,
+  ChartData,
+  Ribbon,
+  UserSelection,
+} from '../../models/stock.models';
+import { RibbonFormData } from '../../../features/configuration/add-ribbon-dialog/add-ribbon-dialog.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -40,6 +22,9 @@ export class StockDataService {
   // BehaviorSubjects for state management
   private categoriesSubject = new BehaviorSubject<Category[]>([]);
   public categories$ = this.categoriesSubject.asObservable();
+
+  private ribbonsSubject = new BehaviorSubject<Ribbon[]>([]);
+  public ribbons$ = this.ribbonsSubject.asObservable();
 
   private selectedStocksSubject = new BehaviorSubject<{
     [key: string]: string[];
@@ -53,19 +38,21 @@ export class StockDataService {
     this.loadCategories();
   }
 
+  // ============== CATEGORIES ==============
+
   // Load categories on initialization
   private loadCategories(): void {
     this.getCategories().subscribe({
       next: (categories) => {
         this.categoriesSubject.next(categories);
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         console.error('Error loading categories:', error);
       },
     });
   }
 
-  // Get categories from SQLite backend
+  // Get categories from backend
   getCategories(): Observable<Category[]> {
     this.loadingSubject.next(true);
 
@@ -79,7 +66,100 @@ export class StockDataService {
     );
   }
 
-  // Get chart data from SQLite backend
+  // ============== RIBBONS ==============
+
+  // Get user's ribbons
+  getUserRibbons(userId?: string): Observable<Ribbon[]> {
+    const url = userId
+      ? `${this.apiUrl}/ribbons/${userId}`
+      : `${this.apiUrl}/ribbons`;
+
+    return this.http.get<Ribbon[]>(url).pipe(
+      tap((ribbons) => {
+        console.log('Ribbons loaded:', ribbons);
+        this.ribbonsSubject.next(ribbons);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  // Create new ribbon
+  createRibbon(ribbonData: RibbonFormData): Observable<Ribbon> {
+    return this.http.post<Ribbon>(`${this.apiUrl}/ribbons`, ribbonData).pipe(
+      tap((ribbon) => {
+        console.log('Ribbon created:', ribbon);
+        const currentRibbons = this.ribbonsSubject.value;
+        this.ribbonsSubject.next([...currentRibbons, ribbon]);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  // Update ribbon
+  updateRibbon(
+    ribbonId: number,
+    data: Partial<RibbonFormData> | any
+  ): Observable<Ribbon> {
+    return this.http
+      .put<Ribbon>(`${this.apiUrl}/ribbons/${ribbonId}`, data)
+      .pipe(
+        tap((updatedRibbon) => {
+          console.log('Ribbon updated:', updatedRibbon);
+          const currentRibbons = this.ribbonsSubject.value;
+          const index = currentRibbons.findIndex((r) => r.id === ribbonId);
+          if (index !== -1) {
+            currentRibbons[index] = updatedRibbon;
+            this.ribbonsSubject.next([...currentRibbons]);
+          }
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // Update ribbon name only
+  updateRibbonName(ribbonId: number, name: string): Observable<any> {
+    return this.http
+      .patch(`${this.apiUrl}/ribbons/${ribbonId}/name`, { name })
+      .pipe(
+        tap(() => {
+          console.log('Ribbon name updated');
+          const currentRibbons = this.ribbonsSubject.value;
+          const ribbon = currentRibbons.find((r) => r.id === ribbonId);
+          if (ribbon) {
+            ribbon.name = name;
+            this.ribbonsSubject.next([...currentRibbons]);
+          }
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  // Delete ribbon
+  deleteRibbon(ribbonId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/ribbons/${ribbonId}`).pipe(
+      tap(() => {
+        console.log('Ribbon deleted:', ribbonId);
+        const currentRibbons = this.ribbonsSubject.value;
+        const filtered = currentRibbons.filter((r) => r.id !== ribbonId);
+        this.ribbonsSubject.next(filtered);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  // Update ribbon order
+  updateRibbonOrder(
+    updates: Array<{ id: number; orderIndex: number }>
+  ): Observable<any> {
+    return this.http.put(`${this.apiUrl}/ribbons/order/batch`, updates).pipe(
+      tap(() => console.log('Ribbon order updated')),
+      catchError(this.handleError)
+    );
+  }
+
+  // ============== CHART DATA ==============
+
+  // Get chart data from backend
   getChartData(symbol: string, range: string): Observable<ChartData> {
     return this.http
       .get<ChartData>(`${this.apiUrl}/stocks/${symbol}/chart/${range}`)
@@ -95,7 +175,9 @@ export class StockDataService {
       );
   }
 
-  // Get user selections from SQLite
+  // ============== USER SELECTIONS (Legacy - for backward compatibility) ==============
+
+  // Get user selections
   getUserSelections(userId?: string): Observable<UserSelection[]> {
     const url = userId
       ? `${this.apiUrl}/config/selections/${userId}`
@@ -107,104 +189,93 @@ export class StockDataService {
     );
   }
 
-  // Toggle stock selection in SQLite
-  toggleStockSelection(
-    categoryId: string,
-    symbol: string,
-    userId: string = 'default'
-  ): Observable<any> {
-    return this.http
+  // Toggle stock selection (legacy)
+  toggleStockSelection(categoryId: string, symbol: string): void {
+    const currentSelections = this.selectedStocksSubject.value;
+    if (!currentSelections[categoryId]) {
+      currentSelections[categoryId] = [];
+    }
+
+    const index = currentSelections[categoryId].indexOf(symbol);
+    if (index > -1) {
+      currentSelections[categoryId].splice(index, 1);
+    } else {
+      currentSelections[categoryId].push(symbol);
+    }
+
+    this.selectedStocksSubject.next({ ...currentSelections });
+
+    // Persist to backend
+    this.http
       .post(`${this.apiUrl}/config/selections/toggle`, {
-        userId,
         categoryId,
         symbol,
       })
-      .pipe(
-        tap(() => {
-          // Update local state
-          const currentSelections = this.selectedStocksSubject.value;
-          if (!currentSelections[categoryId]) {
-            currentSelections[categoryId] = [];
-          }
-
-          const index = currentSelections[categoryId].indexOf(symbol);
-          if (index > -1) {
-            currentSelections[categoryId].splice(index, 1);
-          } else {
-            currentSelections[categoryId].push(symbol);
-          }
-
-          this.selectedStocksSubject.next(currentSelections);
-          console.log('Stock selection toggled:', categoryId, symbol);
-        }),
-        catchError(this.handleError)
-      );
+      .subscribe({
+        next: () => console.log('Selection toggled'),
+        error: (error: HttpErrorResponse) =>
+          console.error('Error toggling selection:', error),
+      });
   }
 
-  // Get latest prices for all stocks
-  getLatestPrices(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/stocks/latest`).pipe(
-      tap((prices) =>
-        console.log('Latest prices loaded:', prices.length, 'stocks')
-      ),
-      catchError(this.handleError)
-    );
-  }
-
-  // Get stock statistics
-  getStockStats(symbol: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/stocks/${symbol}/stats`).pipe(
-      tap((stats) => console.log('Stock stats loaded for', symbol, stats)),
-      catchError(this.handleError)
-    );
-  }
-
-  // Check if stock is selected (local state)
+  // Check if stock is selected (legacy)
   isStockSelected(categoryId: string, symbol: string): boolean {
+    const selections = this.selectedStocksSubject.value;
+    return selections[categoryId]?.includes(symbol) || false;
+  }
+
+  // Get selected stocks for a category (legacy)
+  getSelectedStocks(categoryId: string): Stock[] {
+    const category = this.categoriesSubject.value.find(
+      (c) => c.id === categoryId
+    );
     const selections = this.selectedStocksSubject.value[categoryId] || [];
-    return selections.includes(symbol);
+
+    if (!category) return [];
+
+    return category.stocks.filter((stock) => selections.includes(stock.symbol));
   }
 
-  // Get selected stocks for a category (local state)
-  getSelectedStocks(categoryId: string): string[] {
-    return this.selectedStocksSubject.value[categoryId] || [];
+  // ============== REAL-TIME PRICES ==============
+
+  // Get latest prices
+  getLatestPrices(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/stocks/latest`).pipe(
+      tap((prices) => console.log('Latest prices loaded')),
+      catchError(this.handleError)
+    );
   }
 
-  // Load selections from backend and update local state
-  loadUserSelections(userId: string = 'default'): void {
-    this.getUserSelections(userId).subscribe({
-      next: (selections) => {
-        // Convert array of selections to grouped object
-        const grouped: { [key: string]: string[] } = {};
-
-        selections.forEach((selection) => {
-          if (!grouped[selection.category_id]) {
-            grouped[selection.category_id] = [];
-          }
-          grouped[selection.category_id].push(selection.symbol);
-        });
-
-        this.selectedStocksSubject.next(grouped);
-        console.log('Local selections updated:', grouped);
-      },
-      error: (error) => {
-        console.error('Error loading user selections:', error);
-      },
-    });
-  }
-
-  updateCategoryName(categoryId: string, newName: string): Observable<any> {
+  // Update real-time price
+  updateRealtimePrice(
+    symbol: string,
+    price: number,
+    change: number,
+    changePercent: number,
+    volume: number
+  ): Observable<any> {
     return this.http
-      .put(`${this.apiUrl}/config/categories/${categoryId}`, {
-        name: newName,
+      .post(`${this.apiUrl}/stocks/${symbol}/realtime`, {
+        price,
+        change,
+        changePercent,
+        volume,
       })
+      .pipe(catchError(this.handleError));
+  }
+
+  // ============== CATEGORY MANAGEMENT ==============
+
+  // Update category name
+  updateCategoryName(categoryId: string, name: string): Observable<any> {
+    return this.http
+      .put(`${this.apiUrl}/config/categories/${categoryId}`, { name })
       .pipe(
         tap(() => {
-          // Update local state
           const categories = this.categoriesSubject.value;
           const category = categories.find((c) => c.id === categoryId);
           if (category) {
-            category.name = newName;
+            category.name = name;
             this.categoriesSubject.next([...categories]);
           }
         }),
@@ -212,7 +283,8 @@ export class StockDataService {
       );
   }
 
-  // Error handler
+  // ============== ERROR HANDLING ==============
+
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An error occurred';
 
@@ -222,17 +294,34 @@ export class StockDataService {
     } else {
       // Server-side error
       errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
+
+      if (error.status === 0) {
+        errorMessage =
+          'Cannot connect to server. Please check if the backend is running.';
+      } else if (error.status === 404) {
+        errorMessage = 'Resource not found';
+      } else if (error.status === 500) {
+        errorMessage = 'Server error occurred';
+      }
     }
 
     console.error(errorMessage);
-    this.loadingSubject.next(false);
     return throwError(() => new Error(errorMessage));
   }
 
-  // Utility method to refresh all data
-  refreshAll(): void {
+  // ============== UTILITY METHODS ==============
+
+  // Clear all data
+  clearData(): void {
+    this.categoriesSubject.next([]);
+    this.ribbonsSubject.next([]);
+    this.selectedStocksSubject.next({});
+    this.loadingSubject.next(false);
+  }
+
+  // Refresh all data
+  refreshData(): void {
     this.loadCategories();
-    this.loadUserSelections();
-    this.getLatestPrices().subscribe();
+    this.getUserRibbons().subscribe();
   }
 }

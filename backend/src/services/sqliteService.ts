@@ -148,6 +148,8 @@ export class StockDatabase {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      
+
       -- Stock metadata
       CREATE TABLE IF NOT EXISTS stock_metadata (
         symbol TEXT PRIMARY KEY,
@@ -193,6 +195,32 @@ export class StockDatabase {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      -- User-created ribbons (instances of categories)
+      CREATE TABLE IF NOT EXISTS ribbons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT DEFAULT 'default',
+        name TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        icon TEXT,
+        color TEXT,
+        order_index INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+      );
+
+      -- Ribbon stock selections
+      CREATE TABLE IF NOT EXISTS ribbon_stocks (
+        ribbon_id INTEGER NOT NULL,
+        symbol TEXT NOT NULL,
+        is_selected BOOLEAN DEFAULT 1,
+        added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (ribbon_id, symbol),
+        FOREIGN KEY (ribbon_id) REFERENCES ribbons(id) ON DELETE CASCADE,
+        FOREIGN KEY (symbol) REFERENCES stock_metadata(symbol) ON DELETE CASCADE
+      );
+
       -- Create indexes for performance
       CREATE INDEX IF NOT EXISTS idx_daily_symbol_date 
         ON stocks_daily(symbol, date DESC);
@@ -208,6 +236,13 @@ export class StockDatabase {
       
       CREATE INDEX IF NOT EXISTS idx_settings_user 
         ON settings(user_id, key);
+
+      CREATE INDEX IF NOT EXISTS idx_ribbons_user 
+        ON ribbons(user_id, order_index);
+  
+      CREATE INDEX IF NOT EXISTS idx_ribbon_stocks 
+        ON ribbon_stocks(ribbon_id);
+
     `);
   }
 

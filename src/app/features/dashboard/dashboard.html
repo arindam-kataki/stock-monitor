@@ -1,3 +1,5 @@
+<!-- src/app/features/dashboard/dashboard.html -->
+
 <div class="dashboard-container">
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
@@ -5,35 +7,103 @@
     <p>Loading dashboard...</p>
   </div>
 
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <mat-card class="error-card">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <h3>{{ error }}</h3>
+      <button mat-raised-button color="primary" routerLink="/configuration">
+        Go to Configuration
+      </button>
+    </mat-card>
+  </div>
+
   <!-- Dashboard Content -->
-  <div *ngIf="!loading" class="dashboard-content">
-    <!-- Category Sidebar -->
-    <div class="category-sidebar">
-      <h3>Categories</h3>
-      <div
-        *ngFor="let category of categories; let i = index"
-        class="category-item"
-        [class.active]="i === currentCategoryIndex"
-        (click)="manualSelectCategory(i)"
-      >
-        <span class="category-icon">{{ category.icon }}</span>
-        <span class="category-name">{{ category.name }}</span>
+  <div
+    *ngIf="!loading && !error && activeRibbons.length > 0"
+    class="dashboard-content"
+  >
+    <!-- Ribbon Sidebar -->
+    <div class="ribbon-sidebar">
+      <div class="sidebar-header">
+        <h3>
+          <mat-icon>dashboard</mat-icon>
+          Ribbons
+        </h3>
+        <mat-chip class="ribbon-count">{{ activeRibbons.length }}</mat-chip>
+      </div>
+
+      <div class="ribbon-list">
         <div
-          class="cycle-indicator"
-          *ngIf="i === currentCategoryIndex && isAutoCycling"
+          *ngFor="let ribbon of activeRibbons; let i = index"
+          class="ribbon-item"
+          [class.active]="isRibbonActive(i)"
+          (click)="manualSelectRibbon(i)"
         >
-          <mat-icon class="pulse">fiber_manual_record</mat-icon>
+          <div class="ribbon-info">
+            <span class="ribbon-icon">{{ ribbon.icon }}</span>
+            <span class="ribbon-name">{{ ribbon.name }}</span>
+          </div>
+
+          <!-- Cycle Progress Indicator -->
+          <div
+            class="cycle-indicator"
+            *ngIf="isRibbonActive(i) && isAutoCycling"
+          >
+            <mat-progress-spinner
+              mode="determinate"
+              [value]="getRibbonProgress(i)"
+              diameter="20"
+              strokeWidth="3"
+            ></mat-progress-spinner>
+          </div>
+
+          <mat-badge
+            [content]="ribbon.selectedStocks.length"
+            matBadgeColor="accent"
+            matBadgeSize="small"
+          ></mat-badge>
         </div>
       </div>
 
       <!-- Auto-cycle Controls -->
       <div class="cycle-controls">
         <button
-          mat-button
-          (click)="isAutoCycling ? stopAutoCycle() : startAutoCycle()"
+          mat-stroked-button
+          (click)="isAutoCycling ? pauseAutoCycle() : resumeAutoCycle()"
+          class="cycle-button"
         >
           <mat-icon>{{ isAutoCycling ? "pause" : "play_arrow" }}</mat-icon>
           {{ isAutoCycling ? "Pause" : "Resume" }}
+        </button>
+
+        <div class="cycle-info" *ngIf="settings.autoCycle">
+          <small>Cycling every {{ settings.cycleInterval }}s</small>
+        </div>
+      </div>
+
+      <!-- Manual Navigation -->
+      <div class="manual-navigation">
+        <button
+          mat-icon-button
+          (click)="previousRibbon()"
+          [disabled]="activeRibbons.length <= 1"
+          matTooltip="Previous ribbon"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        <span class="nav-info">
+          {{ currentRibbonIndex + 1 }} / {{ activeRibbons.length }}
+        </span>
+
+        <button
+          mat-icon-button
+          (click)="nextRibbon()"
+          [disabled]="activeRibbons.length <= 1"
+          matTooltip="Next ribbon"
+        >
+          <mat-icon>chevron_right</mat-icon>
         </button>
       </div>
     </div>
@@ -43,17 +113,34 @@
       <!-- Header -->
       <div class="chart-header">
         <div class="header-left">
-          <h2 *ngIf="currentCategory">
-            {{ currentCategory.icon }} {{ currentCategory.name }} Stocks
+          <h2 *ngIf="currentRibbon">
+            <span class="ribbon-icon">{{ currentRibbon.icon }}</span>
+            {{ currentRibbon.name }}
           </h2>
-          <span
+          <mat-chip
             class="status-badge"
             [class.auto]="isAutoCycling"
             [class.manual]="!isAutoCycling"
           >
             {{ isAutoCycling ? "AUTO-CYCLING" : "MANUAL" }}
-          </span>
+          </mat-chip>
         </div>
+
+        <!-- View Mode Toggle -->
+        <mat-button-toggle-group
+          [(ngModel)]="viewMode"
+          class="view-mode-toggle"
+        >
+          <mat-button-toggle value="grid" matTooltip="Grid view">
+            <mat-icon>grid_view</mat-icon>
+          </mat-button-toggle>
+          <mat-button-toggle value="list" matTooltip="List view">
+            <mat-icon>view_list</mat-icon>
+          </mat-button-toggle>
+          <mat-button-toggle value="chart" matTooltip="Chart view">
+            <mat-icon>show_chart</mat-icon>
+          </mat-button-toggle>
+        </mat-button-toggle-group>
 
         <!-- Time Range Selector -->
         <div class="time-range-selector">
@@ -66,10 +153,77 @@
             {{ range }}
           </button>
         </div>
+
+        <!-- Actions -->
+        <div class="header-actions">
+          <button
+            mat-icon-button
+            (click)="refreshDashboard()"
+            matTooltip="Refresh data"
+          >
+            <mat-icon>refresh</mat-icon>
+          </button>
+
+          <button
+            mat-icon-button
+            (click)="exportDashboardData()"
+            matTooltip="Export data"
+          >
+            <mat-icon>download</mat-icon>
+          </button>
+        </div>
       </div>
 
-      <!-- Stock Charts Grid -->
-      <div class="stock-charts-grid">
+      <!-- Statistics Bar -->
+      <div class="statistics-bar" *ngIf="selectedStocks.length > 0">
+        <div class="stat-item">
+          <span class="stat-label">Stocks</span>
+          <span class="stat-value">{{ selectedStocks.length }}</span>
+        </div>
+
+        <mat-divider vertical></mat-divider>
+
+        <div class="stat-item">
+          <span class="stat-label">Market Cap</span>
+          <span class="stat-value">{{ formatMarketCap(totalMarketCap) }}</span>
+        </div>
+
+        <mat-divider vertical></mat-divider>
+
+        <div class="stat-item">
+          <span class="stat-label">Avg Change</span>
+          <span
+            class="stat-value"
+            [class.positive]="averageChange > 0"
+            [class.negative]="averageChange < 0"
+          >
+            {{ formatChangePercent(averageChange) }}
+          </span>
+        </div>
+
+        <mat-divider vertical></mat-divider>
+
+        <div class="stat-item" *ngIf="topGainer">
+          <span class="stat-label">Top Gainer</span>
+          <span class="stat-value positive">
+            {{ topGainer.symbol }}
+            {{ formatChangePercent(topGainer.changePercent) }}
+          </span>
+        </div>
+
+        <mat-divider vertical></mat-divider>
+
+        <div class="stat-item" *ngIf="topLoser">
+          <span class="stat-label">Top Loser</span>
+          <span class="stat-value negative">
+            {{ topLoser.symbol }}
+            {{ formatChangePercent(topLoser.changePercent) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Grid View -->
+      <div class="stock-charts-grid" *ngIf="viewMode === 'grid'">
         <mat-card *ngFor="let stock of selectedStocks" class="stock-chart-card">
           <mat-card-header>
             <div class="stock-header">
@@ -77,40 +231,148 @@
                 <span class="stock-symbol">{{ stock.symbol }}</span>
                 <span class="stock-name">{{ stock.name }}</span>
               </div>
-              <div class="stock-price">${{ getMockPrice() }}</div>
+              <div class="stock-price-info">
+                <div class="stock-price">${{ formatPrice(stock.price) }}</div>
+                <div
+                  class="price-change"
+                  [ngClass]="getStockChangeClass(stock)"
+                >
+                  <mat-icon>{{
+                    stock.change && stock.change >= 0
+                      ? "trending_up"
+                      : "trending_down"
+                  }}</mat-icon>
+                  <span>{{ formatChange(stock.change) }}</span>
+                  <span>({{ formatChangePercent(stock.changePercent) }})</span>
+                </div>
+              </div>
             </div>
           </mat-card-header>
 
-          <!-- Replace the mock chart section with this: -->
           <mat-card-content>
-            <div
-              class="price-change"
-              [class.positive]="getMockChange() > 0"
-              [class.negative]="getMockChange() < 0"
-            >
-              <mat-icon>{{
-                getMockChange() > 0 ? "trending_up" : "trending_down"
-              }}</mat-icon>
-              {{ getMockChange().toFixed(2) }}%
-            </div>
-
-            <!-- Real Chart Component -->
+            <!-- Stock Chart Component -->
             <app-stock-chart
               [symbol]="stock.symbol"
+              [data]="getChartData(stock.symbol)"
               [timeRange]="selectedTimeRange"
-              [chartType]="'line'"
-            >
-            </app-stock-chart>
+              [showVolume]="settings.showVolume"
+              [height]="200"
+            ></app-stock-chart>
+
+            <!-- Additional Info -->
+            <div class="stock-details" *ngIf="settings.showVolume">
+              <div class="detail-item">
+                <span class="detail-label">Volume</span>
+                <span class="detail-value">{{
+                  formatVolume(stock.volume)
+                }}</span>
+              </div>
+              <div class="detail-item" *ngIf="stock.marketCap">
+                <span class="detail-label">Market Cap</span>
+                <span class="detail-value">{{ stock.marketCap }}</span>
+              </div>
+            </div>
           </mat-card-content>
         </mat-card>
+      </div>
 
-        <!-- No Stocks Selected Message -->
-        <div *ngIf="selectedStocks.length === 0" class="no-stocks">
-          <mat-icon>info</mat-icon>
-          <p>No stocks selected for this category.</p>
-          <p>Go to Configuration to select stocks.</p>
-        </div>
+      <!-- List View -->
+      <div class="stock-list-view" *ngIf="viewMode === 'list'">
+        <mat-card>
+          <mat-card-content>
+            <table class="stock-table">
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Name</th>
+                  <th>Price</th>
+                  <th>Change</th>
+                  <th>Change %</th>
+                  <th *ngIf="settings.showVolume">Volume</th>
+                  <th>Market Cap</th>
+                  <th>Chart</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let stock of selectedStocks">
+                  <td class="symbol-cell">{{ stock.symbol }}</td>
+                  <td class="name-cell">{{ stock.name }}</td>
+                  <td class="price-cell">${{ formatPrice(stock.price) }}</td>
+                  <td [ngClass]="getStockChangeClass(stock)">
+                    {{ formatChange(stock.change) }}
+                  </td>
+                  <td [ngClass]="getStockChangeClass(stock)">
+                    {{ formatChangePercent(stock.changePercent) }}
+                  </td>
+                  <td *ngIf="settings.showVolume">
+                    {{ formatVolume(stock.volume) }}
+                  </td>
+                  <td>{{ stock.marketCap || "N/A" }}</td>
+                  <td class="chart-cell">
+                    <app-stock-chart
+                      [symbol]="stock.symbol"
+                      [data]="getChartData(stock.symbol)"
+                      [timeRange]="selectedTimeRange"
+                      [showVolume]="false"
+                      [height]="40"
+                      [minimal]="true"
+                    ></app-stock-chart>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Chart View -->
+      <div class="stock-chart-view" *ngIf="viewMode === 'chart'">
+        <mat-card class="full-chart-card">
+          <mat-card-header>
+            <mat-card-title>Combined Performance</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container">
+              <app-stock-chart
+                [symbol]="'combined'"
+                [data]="getChartData('combined')"
+                [timeRange]="selectedTimeRange"
+                [showVolume]="settings.showVolume"
+                [height]="400"
+                [stocks]="selectedStocks"
+              ></app-stock-chart>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- No Stocks Message -->
+      <div *ngIf="selectedStocks.length === 0" class="no-stocks">
+        <mat-icon>info</mat-icon>
+        <p>No stocks selected for this ribbon</p>
+        <button mat-raised-button color="primary" routerLink="/configuration">
+          Configure Stocks
+        </button>
       </div>
     </div>
+  </div>
+
+  <!-- No Active Ribbons -->
+  <div
+    *ngIf="!loading && !error && activeRibbons.length === 0"
+    class="no-ribbons"
+  >
+    <mat-card class="empty-state-card">
+      <mat-icon class="empty-icon">dashboard_customize</mat-icon>
+      <h2>No Active Ribbons</h2>
+      <p>
+        You need to create and activate at least one ribbon to view the
+        dashboard.
+      </p>
+      <button mat-raised-button color="primary" routerLink="/configuration">
+        <mat-icon>settings</mat-icon>
+        Go to Configuration
+      </button>
+    </mat-card>
   </div>
 </div>

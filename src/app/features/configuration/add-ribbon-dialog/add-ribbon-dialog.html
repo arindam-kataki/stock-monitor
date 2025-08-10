@@ -1,0 +1,184 @@
+<h2 mat-dialog-title>
+  <mat-icon>{{ isEditMode ? "edit" : "add_circle" }}</mat-icon>
+  {{ isEditMode ? "Edit" : "Create New" }} Ribbon
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="ribbonForm">
+    <!-- Ribbon Name -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Ribbon Name</mat-label>
+      <input
+        matInput
+        formControlName="name"
+        placeholder="e.g., Tech Growth, Banking Sector"
+        #nameInput
+        autocomplete="off"
+      />
+      <mat-icon matSuffix>label</mat-icon>
+      <mat-hint>Give your ribbon a descriptive name</mat-hint>
+      <mat-error *ngIf="ribbonForm.get('name')?.hasError('required')">
+        Name is required
+      </mat-error>
+      <mat-error *ngIf="ribbonForm.get('name')?.hasError('minlength')">
+        Name must be at least 2 characters
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Category Selection -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Category Template</mat-label>
+      <mat-select formControlName="categoryId">
+        <mat-option *ngFor="let category of categories" [value]="category.id">
+          <span class="category-option">
+            <span class="category-icon">{{ category.icon }}</span>
+            <span class="category-name">{{ category.name }}</span>
+            <span class="stock-count"
+              >({{ category.stocks.length }} stocks)</span
+            >
+          </span>
+        </mat-option>
+      </mat-select>
+      <mat-icon matSuffix>category</mat-icon>
+      <mat-hint>Choose a category to see available stocks</mat-hint>
+      <mat-error *ngIf="ribbonForm.get('categoryId')?.hasError('required')">
+        Please select a category
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Stock Selection Section -->
+    <div class="stocks-section" *ngIf="selectedCategory">
+      <!-- Header with controls -->
+      <div class="stocks-header">
+        <h3>
+          Select Stocks
+          <mat-chip class="selection-chip">
+            {{ selectedStockCount }} / {{ totalStockCount }} selected
+          </mat-chip>
+        </h3>
+
+        <div class="stock-controls">
+          <!-- Search -->
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search stocks</mat-label>
+            <input
+              matInput
+              [(ngModel)]="searchQuery"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Symbol or name..."
+            />
+            <button
+              mat-icon-button
+              matSuffix
+              *ngIf="searchQuery"
+              (click)="clearSearch()"
+            >
+              <mat-icon>clear</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions">
+            <button
+              mat-stroked-button
+              (click)="toggleSelectAll()"
+              [color]="selectAllState ? 'primary' : ''"
+            >
+              <mat-icon>{{
+                selectAllState ? "check_box" : "check_box_outline_blank"
+              }}</mat-icon>
+              {{ selectAllState ? "Deselect All" : "Select All" }}
+            </button>
+
+            <button
+              mat-stroked-button
+              (click)="showOnlySelected = !showOnlySelected"
+              [color]="showOnlySelected ? 'primary' : ''"
+            >
+              <mat-icon>{{
+                showOnlySelected ? "visibility" : "visibility_off"
+              }}</mat-icon>
+              Show Selected
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <mat-progress-bar
+        mode="determinate"
+        [value]="selectionProgress"
+        class="selection-progress"
+      ></mat-progress-bar>
+
+      <!-- Stock Grid -->
+      <div class="stock-grid">
+        <div
+          *ngFor="let stock of filteredStocks"
+          class="stock-item"
+          [class.selected]="stockSelections[stock.symbol]"
+          (click)="toggleStock(stock.symbol)"
+        >
+          <mat-checkbox
+            [checked]="stockSelections[stock.symbol]"
+            (click)="$event.stopPropagation()"
+            (change)="toggleStock(stock.symbol)"
+            class="stock-checkbox"
+          >
+            <div class="stock-info">
+              <span class="stock-symbol">{{ stock.symbol }}</span>
+              <span class="stock-name">{{ stock.name }}</span>
+              <div class="stock-meta" *ngIf="stock.sector">
+                <mat-icon class="tiny-icon">business</mat-icon>
+                <span>{{ stock.sector }}</span>
+              </div>
+            </div>
+          </mat-checkbox>
+        </div>
+
+        <!-- No results message -->
+        <div *ngIf="filteredStocks.length === 0" class="no-results">
+          <mat-icon>search_off</mat-icon>
+          <p>No stocks found matching your criteria</p>
+        </div>
+      </div>
+
+      <!-- Quick Selection Chips -->
+      <div class="quick-select-chips">
+        <span class="chip-label">Quick select:</span>
+        <mat-chip-listbox>
+          <mat-chip-option (click)="selectTopN(5)">Top 5</mat-chip-option>
+          <mat-chip-option (click)="selectTopN(10)">Top 10</mat-chip-option>
+          <mat-chip-option (click)="selectPattern('inverse')"
+            >Invert</mat-chip-option
+          >
+          <mat-chip-option (click)="deselectAll()" color="warn"
+            >Clear All</mat-chip-option
+          >
+        </mat-chip-listbox>
+      </div>
+    </div>
+
+    <!-- Warning if no stocks selected -->
+    <div
+      class="warning-message"
+      *ngIf="selectedCategory && selectedStockCount === 0"
+    >
+      <mat-icon>warning</mat-icon>
+      <span>Please select at least one stock to create the ribbon</span>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="save()"
+    [disabled]="!isFormValid"
+  >
+    <mat-icon>{{ isEditMode ? "save" : "add" }}</mat-icon>
+    {{ isEditMode ? "Update" : "Create" }} Ribbon
+  </button>
+</mat-dialog-actions>
