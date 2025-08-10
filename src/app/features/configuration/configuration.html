@@ -1,20 +1,6 @@
 <!-- src/app/features/configuration/configuration.html -->
 
 <div class="configuration-container">
-  <!-- Header Section -->
-  <div class="page-header">
-    <h2>Stock Monitor Configuration</h2>
-    <button
-      mat-raised-button
-      color="primary"
-      (click)="openAddRibbonDialog()"
-      [disabled]="loading"
-    >
-      <mat-icon>add</mat-icon>
-      Add New Ribbon
-    </button>
-  </div>
-
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <mat-spinner></mat-spinner>
@@ -34,14 +20,32 @@
   <!-- Ribbons Section -->
   <div class="ribbons-section" *ngIf="!loading && !error">
     <div class="section-header">
-      <h3>
+      <!-- Title on its own line -->
+      <h3 class="section-title">
         <mat-icon>dashboard</mat-icon>
         Your Dashboard Ribbons
       </h3>
-      <span class="ribbon-stats">
-        {{ getActiveRibbonCount() }} active ribbons |
-        {{ getTotalStockCount() }} total stocks
-      </span>
+
+      <!-- Actions bar below title -->
+      <div class="actions-bar">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="openAddRibbonDialog()"
+          class="add-ribbon-btn"
+        >
+          <mat-icon>add</mat-icon>
+          Add Ribbon
+        </button>
+
+        <div class="ribbon-stats">
+          <span class="stat-value">{{ getActiveRibbonCount() }}</span>
+          <span class="stat-label">active</span>
+          <span class="separator">•</span>
+          <span class="stat-value">{{ getTotalStockCount() }}</span>
+          <span class="stat-label">stocks</span>
+        </div>
+      </div>
     </div>
 
     <!-- Ribbons List with Drag & Drop -->
