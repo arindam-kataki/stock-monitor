@@ -1,213 +1,287 @@
+// src/app/shared/components/stock-chart/stock-chart.ts
+
 import {
   Component,
   Input,
-  OnInit,
+  OnChanges,
+  OnDestroy,
+  SimpleChanges,
   ViewChild,
   ElementRef,
-  OnChanges,
-  SimpleChanges,
+  AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
-import 'chartjs-adapter-date-fns';
+import { ChartData, TimeRange } from '../../../core/models/stock.models';
 
+// Register Chart.js components
 Chart.register(...registerables);
 
 @Component({
   selector: 'app-stock-chart',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="chart-container">
-      <canvas #chartCanvas></canvas>
-    </div>
-  `,
-  styles: [
-    `
-      .chart-container {
-        position: relative;
-        height: 200px;
-        width: 100%;
-      }
-    `,
-  ],
+  templateUrl: './stock-chart.html',
+  styleUrls: ['./stock-chart.scss'],
 })
-export class StockChartComponent implements OnInit, OnChanges {
-  @ViewChild('chartCanvas', { static: true })
-  chartCanvas!: ElementRef<HTMLCanvasElement>;
+export class StockChartComponent
+  implements OnChanges, AfterViewInit, OnDestroy
+{
+  @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
+
   @Input() symbol: string = '';
-  @Input() timeRange: string = '5D';
-  @Input() chartType: 'line' | 'candlestick' | 'bar' = 'line';
+  @Input() data?: ChartData;
+  @Input() timeRange: TimeRange = '1D';
+  @Input() showVolume: boolean = true;
+  @Input() height: number = 300;
+  @Input() minimal: boolean = false;
+  @Input() stocks?: any[]; // For future combined view
 
-  private chart: Chart | null = null;
+  private chart?: Chart;
 
-  ngOnInit(): void {
+  ngAfterViewInit(): void {
     this.createChart();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['timeRange'] && !changes['timeRange'].firstChange) {
+    if (
+      this.chartCanvas &&
+      (changes['data'] || changes['timeRange'] || changes['showVolume'])
+    ) {
       this.updateChart();
     }
-  }
-
-  private generateMockDataWithVolume(): {
-    labels: string[];
-    prices: number[];
-    volumes: number[];
-  } {
-    const data = this.generateMockData();
-    const volumes = data.prices.map(() => Math.floor(Math.random() * 10000000));
-    return { ...data, volumes };
-  }
-
-  private createChart(): void {
-    const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
-
-    // Generate mock data based on time range
-    const data = this.generateMockDataWithVolume();
-
-    const config: ChartConfiguration = {
-      type: 'line' as ChartType,
-      data: {
-        labels: data.labels,
-        datasets: [
-          {
-            label: this.symbol,
-            data: data.prices,
-            borderColor: 'rgb(102, 126, 234)',
-            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            pointBackgroundColor: 'rgb(102, 126, 234)',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: 'index',
-          intersect: false,
-        },
-        plugins: {
-          legend: {
-            display: false,
-          },
-          tooltip: {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            titleColor: '#fff',
-            bodyColor: '#fff',
-            padding: 10,
-            displayColors: false,
-            callbacks: {
-              label: (context) => {
-                return `$${context.parsed.y.toFixed(2)}`;
-              },
-            },
-          },
-        },
-        scales: {
-          x: {
-            display: true,
-            grid: {
-              display: false,
-            },
-            ticks: {
-              maxTicksLimit: 6,
-              color: '#999',
-            },
-          },
-          y: {
-            display: true,
-            position: 'right',
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)',
-            },
-            ticks: {
-              color: '#999',
-              callback: function (value) {
-                return '$' + value;
-              },
-            },
-          },
-        },
-      },
-    };
-
-    this.chart = new Chart(ctx, config);
-  }
-
-  private generateMockData(): { labels: string[]; prices: number[] } {
-    const labels: string[] = [];
-    const prices: number[] = [];
-    const basePrice = 100 + Math.random() * 400;
-
-    let dataPoints = 0;
-    switch (this.timeRange) {
-      case '1D':
-        dataPoints = 78; // Every 5 min for 6.5 hours
-        break;
-      case '5D':
-        dataPoints = 5;
-        break;
-      case '1M':
-        dataPoints = 22;
-        break;
-      case '6M':
-        dataPoints = 26;
-        break;
-      case '1Y':
-        dataPoints = 52;
-        break;
-      default:
-        dataPoints = 5;
-    }
-
-    for (let i = 0; i < dataPoints; i++) {
-      // Generate labels based on time range
-      if (this.timeRange === '1D') {
-        const hour = 9 + Math.floor(i / 12);
-        const minute = (i % 12) * 5;
-        labels.push(`${hour}:${minute.toString().padStart(2, '0')}`);
-      } else if (this.timeRange === '5D') {
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-        labels.push(days[i]);
-      } else if (this.timeRange === '1M') {
-        labels.push(`Day ${i + 1}`);
-      } else if (this.timeRange === '6M') {
-        labels.push(`Week ${i + 1}`);
-      } else {
-        labels.push(`Month ${i + 1}`);
-      }
-
-      // Generate price with random walk
-      const change = (Math.random() - 0.5) * 10;
-      const newPrice = i === 0 ? basePrice : prices[i - 1] + change;
-      prices.push(Math.max(newPrice, basePrice * 0.8)); // Prevent too low prices
-    }
-
-    return { labels, prices };
-  }
-
-  private updateChart(): void {
-    if (!this.chart) return;
-
-    const data = this.generateMockData();
-    this.chart.data.labels = data.labels;
-    this.chart.data.datasets[0].data = data.prices;
-    this.chart.update();
   }
 
   ngOnDestroy(): void {
     if (this.chart) {
       this.chart.destroy();
     }
+  }
+
+  private createChart(): void {
+    if (
+      !this.chartCanvas ||
+      !this.data ||
+      !this.data.data ||
+      this.data.data.length === 0
+    ) {
+      return;
+    }
+
+    const ctx = this.chartCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    const chartData = this.prepareChartData();
+    const chartOptions = this.getChartOptions();
+
+    this.chart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: chartOptions,
+    });
+  }
+
+  private updateChart(): void {
+    if (this.chart) {
+      this.chart.destroy();
+    }
+    this.createChart();
+  }
+
+  private prepareChartData(): any {
+    if (!this.data || !this.data.data) {
+      return { labels: [], datasets: [] };
+    }
+
+    const labels = this.data.data.map((point) => {
+      const date = new Date(point.date || point.timestamp || '');
+      return this.formatDateLabel(date);
+    });
+
+    const priceData = this.data.data.map((point) => point.close);
+    const volumeData = this.data.data.map((point) => point.volume);
+
+    const datasets: any[] = [
+      {
+        label: `${this.symbol} Price`,
+        data: priceData,
+        borderColor: this.getPriceColor(),
+        backgroundColor: this.getPriceColor(0.1),
+        borderWidth: this.minimal ? 1 : 2,
+        tension: 0.1,
+        fill: !this.minimal,
+        pointRadius: this.minimal ? 0 : 2,
+        pointHoverRadius: this.minimal ? 2 : 4,
+        yAxisID: 'y',
+      },
+    ];
+
+    if (this.showVolume && !this.minimal) {
+      datasets.push({
+        label: 'Volume',
+        data: volumeData,
+        type: 'bar',
+        backgroundColor: 'rgba(128, 128, 128, 0.3)',
+        borderColor: 'rgba(128, 128, 128, 0.5)',
+        borderWidth: 1,
+        yAxisID: 'y1',
+      });
+    }
+
+    return { labels, datasets };
+  }
+
+  private getChartOptions(): any {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: !this.minimal,
+        },
+        tooltip: {
+          enabled: !this.minimal,
+          callbacks: {
+            label: (context: any) => {
+              const label = context.dataset.label || '';
+              const value = context.parsed.y;
+
+              if (label.includes('Price')) {
+                return `${label}: $${value.toFixed(2)}`;
+              } else if (label === 'Volume') {
+                return `${label}: ${this.formatVolume(value)}`;
+              }
+              return `${label}: ${value}`;
+            },
+          },
+        },
+      },
+      scales: this.minimal ? this.getMinimalScales() : this.getFullScales(),
+    };
+  }
+
+  private getFullScales(): any {
+    const scales: any = {
+      x: {
+        display: true,
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxTicksLimit: this.getMaxTicks(),
+        },
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Price ($)',
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+      },
+    };
+
+    if (this.showVolume) {
+      scales.y1 = {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Volume',
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+        ticks: {
+          callback: (value: any) => this.formatVolume(value),
+        },
+      };
+    }
+
+    return scales;
+  }
+
+  private getMinimalScales(): any {
+    return {
+      x: { display: false },
+      y: { display: false },
+    };
+  }
+
+  private formatDateLabel(date: Date): string {
+    switch (this.timeRange) {
+      case '1D':
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      case '5D':
+      case '1M':
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        });
+      default:
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          year: 'numeric',
+        });
+    }
+  }
+
+  private getMaxTicks(): number {
+    switch (this.timeRange) {
+      case '1D':
+        return 8;
+      case '5D':
+        return 5;
+      case '1M':
+        return 6;
+      case '3M':
+        return 6;
+      case '6M':
+        return 6;
+      case '1Y':
+        return 12;
+      default:
+        return 10;
+    }
+  }
+
+  private getPriceColor(alpha: number = 1): string {
+    if (!this.data || this.data.data.length < 2) {
+      return `rgba(102, 126, 234, ${alpha})`;
+    }
+
+    const firstPrice = this.data.data[0].close;
+    const lastPrice = this.data.data[this.data.data.length - 1].close;
+
+    if (lastPrice > firstPrice) {
+      return `rgba(34, 197, 94, ${alpha})`; // Green for gain
+    } else if (lastPrice < firstPrice) {
+      return `rgba(239, 68, 68, ${alpha})`; // Red for loss
+    } else {
+      return `rgba(102, 126, 234, ${alpha})`; // Blue for neutral
+    }
+  }
+
+  private formatVolume(value: number): string {
+    if (value >= 1e9) {
+      return `${(value / 1e9).toFixed(1)}B`;
+    } else if (value >= 1e6) {
+      return `${(value / 1e6).toFixed(1)}M`;
+    } else if (value >= 1e3) {
+      return `${(value / 1e3).toFixed(1)}K`;
+    }
+    return value.toString();
   }
 }

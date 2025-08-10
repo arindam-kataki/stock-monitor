@@ -58,11 +58,12 @@
             ></mat-progress-spinner>
           </div>
 
-          <mat-badge
-            [content]="ribbon.selectedStocks.length"
+          <span
+            [matBadge]="ribbon.selectedStocks.length"
             matBadgeColor="accent"
             matBadgeSize="small"
-          ></mat-badge>
+            class="ribbon-badge"
+          ></span>
         </div>
       </div>
 

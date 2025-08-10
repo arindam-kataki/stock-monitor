@@ -538,6 +538,255 @@ export class StockDatabase {
       .all();
   }
 
+  // Add these methods to backend/src/services/sqliteService.ts
+
+  // ============== RIBBON METHODS ==============
+
+  // Get user's ribbons
+  getUserRibbons(userId: string = 'default'): any[] {
+    const ribbons = this.db
+      .prepare(
+        `
+      SELECT 
+        r.id,
+        r.user_id,
+        r.name,
+        r.category_id,
+        r.icon,
+        r.color,
+        r.order_index as orderIndex,
+        r.is_active as isActive,
+        r.created_at as createdAt,
+        r.updated_at as updatedAt,
+        c.name as categoryName,
+        GROUP_CONCAT(rs.symbol) as selectedStocksStr
+      FROM ribbons r
+      LEFT JOIN categories c ON r.category_id = c.id
+      LEFT JOIN ribbon_stocks rs ON r.id = rs.ribbon_id
+      WHERE r.user_id = ?
+      GROUP BY r.id
+      ORDER BY r.order_index
+    `
+      )
+      .all(userId) as any[];
+
+    return ribbons.map((ribbon: any) => ({
+      id: ribbon.id,
+      name: ribbon.name,
+      categoryId: ribbon.category_id,
+      categoryName: ribbon.categoryName,
+      icon: ribbon.icon,
+      color: ribbon.color,
+      orderIndex: ribbon.orderIndex,
+      isActive: ribbon.isActive === 1,
+      selectedStocks: ribbon.selectedStocksStr
+        ? ribbon.selectedStocksStr.split(',')
+        : [],
+      createdAt: ribbon.createdAt,
+      updatedAt: ribbon.updatedAt,
+    }));
+  }
+
+  // Get single ribbon
+  getRibbon(ribbonId: number): any {
+    const ribbon = this.db
+      .prepare(
+        `
+      SELECT 
+        r.id,
+        r.user_id,
+        r.name,
+        r.category_id,
+        r.icon,
+        r.color,
+        r.order_index as orderIndex,
+        r.is_active as isActive,
+        r.created_at as createdAt,
+        r.updated_at as updatedAt,
+        c.name as categoryName,
+        GROUP_CONCAT(rs.symbol) as selectedStocksStr
+      FROM ribbons r
+      LEFT JOIN categories c ON r.category_id = c.id
+      LEFT JOIN ribbon_stocks rs ON r.id = rs.ribbon_id
+      WHERE r.id = ?
+      GROUP BY r.id
+    `
+      )
+      .get(ribbonId) as any;
+
+    if (!ribbon) {
+      return null;
+    }
+
+    return {
+      id: ribbon.id,
+      name: ribbon.name,
+      categoryId: ribbon.category_id,
+      categoryName: ribbon.categoryName,
+      icon: ribbon.icon,
+      color: ribbon.color,
+      orderIndex: ribbon.orderIndex,
+      isActive: ribbon.isActive === 1,
+      selectedStocks: ribbon.selectedStocksStr
+        ? ribbon.selectedStocksStr.split(',')
+        : [],
+      createdAt: ribbon.createdAt,
+      updatedAt: ribbon.updatedAt,
+    };
+  }
+
+  // Create ribbon
+  createRibbon(data: {
+    userId?: string;
+    name: string;
+    categoryId: string;
+    icon?: string;
+    color?: string;
+    orderIndex?: number;
+    isActive?: boolean;
+  }): number {
+    const result = this.db
+      .prepare(
+        `
+      INSERT INTO ribbons (
+        user_id, name, category_id, icon, color, order_index, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `
+      )
+      .run(
+        data.userId || 'default',
+        data.name,
+        data.categoryId,
+        data.icon || '📊',
+        data.color || '#667eea',
+        data.orderIndex || 0,
+        data.isActive !== false ? 1 : 0
+      );
+
+    return result.lastInsertRowid as number;
+  }
+
+  // Add stock to ribbon
+  addStockToRibbon(ribbonId: number, symbol: string): void {
+    this.db
+      .prepare(
+        `
+      INSERT OR REPLACE INTO ribbon_stocks (ribbon_id, symbol, is_selected)
+      VALUES (?, ?, 1)
+    `
+      )
+      .run(ribbonId, symbol);
+  }
+
+  // Update ribbon name
+  updateRibbonName(ribbonId: number, name: string): void {
+    this.db
+      .prepare(
+        `
+      UPDATE ribbons 
+      SET name = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `
+      )
+      .run(name, ribbonId);
+  }
+
+  // Update ribbon active status
+  updateRibbonActive(ribbonId: number, isActive: boolean): void {
+    this.db
+      .prepare(
+        `
+      UPDATE ribbons 
+      SET is_active = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `
+      )
+      .run(isActive ? 1 : 0, ribbonId);
+  }
+
+  // Update ribbon stocks
+  updateRibbonStocks(ribbonId: number, symbols: string[]): void {
+    // Start transaction
+    const deleteStmt = this.db.prepare(
+      'DELETE FROM ribbon_stocks WHERE ribbon_id = ?'
+    );
+    const insertStmt = this.db.prepare(`
+      INSERT INTO ribbon_stocks (ribbon_id, symbol, is_selected)
+      VALUES (?, ?, 1)
+    `);
+
+    const transaction = this.db.transaction(
+      (ribbonId: number, symbols: string[]) => {
+        // Delete existing stocks
+        deleteStmt.run(ribbonId);
+
+        // Add new stocks
+        for (const symbol of symbols) {
+          insertStmt.run(ribbonId, symbol);
+        }
+      }
+    );
+
+    transaction(ribbonId, symbols);
+  }
+
+  // Update ribbon order
+  updateRibbonOrder(ribbonId: number, orderIndex: number): void {
+    this.db
+      .prepare(
+        `
+      UPDATE ribbons 
+      SET order_index = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `
+      )
+      .run(orderIndex, ribbonId);
+  }
+
+  // Delete ribbon
+  deleteRibbon(ribbonId: number): void {
+    // Stocks will be deleted automatically due to CASCADE
+    this.db.prepare('DELETE FROM ribbons WHERE id = ?').run(ribbonId);
+  }
+
+  // Create ribbons tables if they don't exist
+  createRibbonTables(): void {
+    this.db.exec(`
+      -- Ribbons table
+      CREATE TABLE IF NOT EXISTS ribbons (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT DEFAULT 'default',
+        name TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        icon TEXT,
+        color TEXT,
+        order_index INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+      );
+
+      -- Ribbon stocks table
+      CREATE TABLE IF NOT EXISTS ribbon_stocks (
+        ribbon_id INTEGER NOT NULL,
+        symbol TEXT NOT NULL,
+        is_selected INTEGER DEFAULT 1,
+        added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (ribbon_id, symbol),
+        FOREIGN KEY (ribbon_id) REFERENCES ribbons(id) ON DELETE CASCADE,
+        FOREIGN KEY (symbol) REFERENCES stock_metadata(symbol) ON DELETE CASCADE
+      );
+
+      -- Index for performance
+      CREATE INDEX IF NOT EXISTS idx_ribbons_user 
+        ON ribbons(user_id, order_index);
+      
+      CREATE INDEX IF NOT EXISTS idx_ribbon_stocks 
+        ON ribbon_stocks(ribbon_id);
+    `);
+  }
+
   // ============ CONFIGURATION METHODS ============
 
   // Get all categories with their stocks

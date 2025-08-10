@@ -1,6 +1,10 @@
-<div class="chart-container">
-  <div *ngIf="loading" class="chart-loading">
-    <mat-spinner diameter="30"></mat-spinner>
+<!-- src/app/shared/components/stock-chart/stock-chart.html -->
+
+<div class="chart-container" [style.height.px]="height">
+  <canvas #chartCanvas></canvas>
+
+  <!-- No data message -->
+  <div *ngIf="!data || !data.data || data.data.length === 0" class="no-data">
+    <span>No data available</span>
   </div>
-  <canvas #chartCanvas [style.display]="loading ? 'none' : 'block'"></canvas>
 </div>

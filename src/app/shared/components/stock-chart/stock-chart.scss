@@ -1,17 +1,27 @@
+// src/app/shared/components/stock-chart/stock-chart.scss
+
 .chart-container {
   position: relative;
-  height: 200px;
   width: 100%;
-
-  .chart-loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
+  min-height: 100px;
 
   canvas {
     width: 100% !important;
     height: 100% !important;
+  }
+}
+
+.no-data {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+
+  span {
+    display: block;
   }
 }

@@ -116,7 +116,7 @@ export class AddRibbonDialogComponent implements OnInit, AfterViewInit {
   }
 
   constructor(
-    public dialogRef: MatDialogRef,
+    public dialogRef: MatDialogRef<AddRibbonDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: AddRibbonDialogData,
     private fb: FormBuilder
   ) {

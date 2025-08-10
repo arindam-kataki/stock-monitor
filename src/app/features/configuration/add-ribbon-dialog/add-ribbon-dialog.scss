@@ -11,7 +11,7 @@ h2[mat-dialog-title] {
   margin: 0;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-
+  
   mat-icon {
     color: #667eea;
   }
@@ -22,21 +22,21 @@ mat-dialog-content {
   padding: 24px 24px 16px !important;
   max-height: 70vh;
   overflow-y: auto;
-
+  
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 8px;
   }
-
+  
   &::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
   }
-
+  
   &::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 4px;
-
+    
     &:hover {
       background: #555;
     }
@@ -59,16 +59,16 @@ form {
   display: flex;
   align-items: center;
   gap: 8px;
-
+  
   .category-icon {
     font-size: 20px;
   }
-
+  
   .category-name {
     flex: 1;
     font-weight: 500;
   }
-
+  
   .stock-count {
     color: #666;
     font-size: 12px;
@@ -78,17 +78,17 @@ form {
 // Stocks selection section
 .stocks-section {
   margin-top: 24px;
-
+  
   .stocks-header {
     margin-bottom: 16px;
-
+    
     h3 {
       display: flex;
       align-items: center;
       gap: 12px;
       margin: 0 0 16px 0;
       color: #333;
-
+      
       .selection-chip {
         background: linear-gradient(135deg, #667eea, #764ba2);
         color: white;
@@ -98,26 +98,26 @@ form {
       }
     }
   }
-
+  
   .stock-controls {
     display: flex;
     gap: 16px;
     align-items: center;
     flex-wrap: wrap;
-
+    
     .search-field {
       flex: 1;
       min-width: 200px;
-
+      
       ::ng-deep .mat-mdc-form-field-wrapper {
         padding-bottom: 0;
       }
     }
-
+    
     .quick-actions {
       display: flex;
       gap: 8px;
-
+      
       button {
         mat-icon {
           margin-right: 4px;
@@ -134,7 +134,7 @@ form {
 .selection-progress {
   margin: 16px 0;
   height: 4px;
-
+  
   ::ng-deep .mdc-linear-progress__bar-inner {
     background: linear-gradient(135deg, #667eea, #764ba2);
   }
@@ -151,12 +151,12 @@ form {
   background: #f8f9fa;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-
+  
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;
   }
-
+  
   &::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 3px;
@@ -171,39 +171,39 @@ form {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-
+  
   &:hover {
     border-color: #667eea;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
-
+  
   &.selected {
     background: linear-gradient(135deg, #f0f4ff, #e8ecff);
     border-color: #667eea;
-
+    
     .stock-symbol {
       color: #667eea;
       font-weight: 600;
     }
   }
-
+  
   .stock-checkbox {
     width: 100%;
-
+    
     ::ng-deep .mdc-checkbox__background {
       border-color: #667eea !important;
     }
-
+    
     ::ng-deep .mdc-checkbox--selected .mdc-checkbox__background {
       background-color: #667eea !important;
       border-color: #667eea !important;
     }
   }
-
+  
   .stock-info {
     margin-left: 8px;
-
+    
     .stock-symbol {
       display: block;
       font-weight: 600;
@@ -211,7 +211,7 @@ form {
       color: #333;
       margin-bottom: 4px;
     }
-
+    
     .stock-name {
       display: block;
       font-size: 12px;
@@ -221,14 +221,14 @@ form {
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
+    
     .stock-meta {
       display: flex;
       align-items: center;
       gap: 4px;
       font-size: 11px;
       color: #999;
-
+      
       .tiny-icon {
         font-size: 14px;
         width: 14px;
@@ -244,7 +244,7 @@ form {
   text-align: center;
   padding: 40px 20px;
   color: #999;
-
+  
   mat-icon {
     font-size: 48px;
     width: 48px;
@@ -252,7 +252,7 @@ form {
     opacity: 0.5;
     margin-bottom: 16px;
   }
-
+  
   p {
     margin: 0;
     font-size: 14px;
@@ -265,21 +265,21 @@ form {
   display: flex;
   align-items: center;
   gap: 12px;
-
+  
   .chip-label {
     color: #666;
     font-size: 14px;
     font-weight: 500;
   }
-
+  
   mat-chip-listbox {
     display: flex;
     gap: 8px;
-
+    
     mat-chip-option {
       font-size: 12px;
       min-height: 28px;
-
+      
       &:hover {
         background: #f0f4ff;
       }
@@ -298,11 +298,11 @@ form {
   border-radius: 4px;
   color: #e65100;
   margin-top: 16px;
-
+  
   mat-icon {
     color: #ff9800;
   }
-
+  
   span {
     font-size: 14px;
   }
@@ -312,7 +312,7 @@ form {
 mat-dialog-actions {
   padding: 16px 24px !important;
   border-top: 1px solid rgba(0, 0, 0, 0.12);
-
+  
   button {
     mat-icon {
       margin-right: 4px;
@@ -329,20 +329,20 @@ mat-dialog-actions {
     grid-template-columns: 1fr;
     max-height: 250px;
   }
-
+  
   .stock-controls {
     flex-direction: column;
     align-items: stretch;
-
+    
     .search-field {
       width: 100%;
     }
-
+    
     .quick-actions {
       justify-content: space-between;
     }
   }
-
+  
   .quick-select-chips {
     flex-wrap: wrap;
   }
@@ -362,7 +362,7 @@ mat-dialog-actions {
 
 .stock-item {
   animation: slideIn 0.3s ease;
-
+  
   @for $i from 1 through 20 {
     &:nth-child(#{$i}) {
       animation-delay: #{$i * 0.02}s;
