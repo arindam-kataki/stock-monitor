@@ -217,6 +217,7 @@ export class ConfigurationComponent implements OnInit {
           this.ribbons[index] = updatedRibbon;
         }
         this.showSnackBar('Ribbon updated successfully!', 'success');
+        this.loadRibbons();
       },
       error: (error) => {
         console.error('Error updating ribbon:', error);
