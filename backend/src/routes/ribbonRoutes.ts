@@ -71,7 +71,9 @@ router.post('/', (req: Request, res: Response) => {
 router.put('/:id', (req: Request, res: Response) => {
   try {
     const ribbonId = parseInt(req.params.id);
-    const { name, selectedStocks, isActive } = req.body;
+    const { name, selectedStocks, stockAlerts, isActive } = req.body;
+
+    console.log('Updating ribbon:', ribbonId, 'with data:', req.body);
 
     if (name !== undefined) {
       stockDb.updateRibbonName(ribbonId, name);
@@ -82,9 +84,11 @@ router.put('/:id', (req: Request, res: Response) => {
     }
 
     if (selectedStocks !== undefined) {
-      stockDb.updateRibbonStocks(ribbonId, selectedStocks);
+      // Pass stockAlerts to updateRibbonStocks
+      stockDb.updateRibbonStocks(ribbonId, selectedStocks, stockAlerts);
     }
 
+    // Get and return the updated ribbon with alerts
     const ribbon = stockDb.getRibbon(ribbonId);
     res.json(ribbon);
   } catch (error) {

@@ -24,27 +24,10 @@ mat-dialog-content {
   padding: 24px 24px 16px !important;
   min-width: 700px;
   max-width: 900px;
-  max-height: 80vh;
-  overflow-y: auto;
-
-  // Scrollbar styling
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-
-    &:hover {
-      background: #555;
-    }
-  }
+  height: 70vh; // Fixed height
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Prevent dialog content from scrolling
 }
 
 // Form styles
@@ -52,6 +35,8 @@ form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .full-width {
@@ -107,55 +92,56 @@ form {
 // Stocks section
 .stocks-section {
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; // Important for flexbox overflow
+  overflow: hidden;
 
   .stocks-header {
     margin-bottom: 16px;
-
-    h3 {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0 0 16px 0;
-      color: #333;
-      font-size: 18px;
-
-      .selection-chip {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        font-size: 12px;
-        font-weight: normal;
-        padding: 4px 12px;
-        border-radius: 16px;
-      }
-    }
-  }
-
-  .stock-controls {
+    flex-shrink: 0; // Prevent header from shrinking
     display: flex;
-    gap: 16px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
+    justify-content: space-between;
+    align-items: center; // Changed from flex-start to center for vertical alignment
+    gap: 20px;
 
-    .search-field {
-      flex: 1;
-      min-width: 200px;
+    .header-left {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center; // Ensure vertical centering
 
-      ::ng-deep .mat-mdc-form-field-wrapper {
-        padding-bottom: 0;
+      h3 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        color: #333;
+        font-size: 18px;
+
+        .selection-chip {
+          background: linear-gradient(135deg, #ffd54f, #ffb300);
+          color: #333;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 16px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
       }
     }
 
-    .quick-actions {
+    .header-right {
+      flex: 1;
       display: flex;
-      gap: 8px;
+      align-items: center; // Ensure vertical centering
+      justify-content: flex-end;
 
-      button {
-        mat-icon {
-          margin-right: 4px;
-          font-size: 18px;
-          height: 18px;
-          width: 18px;
+      .search-field {
+        width: 250px;
+
+        ::ng-deep .mat-mdc-form-field-wrapper {
+          padding-bottom: 0;
         }
       }
     }
@@ -166,33 +152,45 @@ form {
 .selection-progress {
   margin: 16px 0;
   height: 4px;
+  flex-shrink: 0; // Prevent progress bar from shrinking
 
   ::ng-deep {
     .mdc-linear-progress__bar-inner {
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: linear-gradient(135deg, #ffd54f, #ffb300);
     }
   }
 }
 
-// Compact Stock List
+// Compact Stock List - The only scrollable area
 .stock-list-compact {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 450px;
+  flex: 1;
+  min-height: 0; // Important for flexbox overflow
   overflow-y: auto;
   padding: 12px;
   background: #f8f9fa;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
 
+  // Scrollbar styling
   &::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
+    background: #bbb;
+    border-radius: 4px;
+
+    &:hover {
+      background: #999;
+    }
   }
 }
 
@@ -204,7 +202,7 @@ form {
   border: 1px solid #e8e8e8;
   border-radius: 6px;
   transition: all 0.2s ease;
-  margin-bottom: 8px;
+  margin-bottom: 6px; // Reduced from 8px
 
   &:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -226,17 +224,25 @@ form {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    min-height: 48px;
+    padding: 6px 12px; // Reduced from 8px 12px
+    min-height: 40px; // Reduced from 48px
   }
+}
+
+// Stock item row (main content)
+.stock-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px; // Reduced from 8px 12px
+  min-height: 40px; // Reduced from 48px
 }
 
 // Stock left section (checkbox + info)
 .stock-left-section {
   display: flex;
   align-items: center;
-  flex: 0 0 auto;
-  min-width: 150px;
+  flex: 1; // Take available space
 
   .stock-checkbox-compact {
     ::ng-deep .mat-mdc-checkbox-label {
@@ -246,25 +252,24 @@ form {
 
   .stock-info-compact {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center; // Changed to horizontal layout
+    gap: 8px;
     margin-left: 8px;
 
     .stock-symbol {
       font-weight: 600;
       font-size: 13px;
       color: #333;
-      line-height: 1.2;
+      min-width: 50px; // Ensure consistent width
     }
 
     .stock-name {
-      font-size: 11px;
+      font-size: 12px;
       color: #666;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 120px;
-      line-height: 1.2;
+      max-width: 200px; // Increased from 120px for horizontal layout
     }
   }
 }
@@ -273,19 +278,18 @@ form {
 .alert-values-compact {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex: 1;
-  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0; // Don't shrink
 
   .alert-value-wrapper {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 
     .alert-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 16px; // Reduced from 18px
+      width: 16px;
+      height: 16px;
 
       &.high {
         color: #4caf50;
@@ -297,12 +301,12 @@ form {
     }
 
     .alert-value {
-      font-size: 13px; // Same as stock symbol
+      font-size: 12px; // Reduced from 13px
       font-weight: 600;
       color: #333;
-      padding: 4px 8px;
+      padding: 2px 6px; // Reduced padding
       border-radius: 4px;
-      min-width: 60px;
+      min-width: 50px; // Reduced from 60px
       text-align: center;
       transition: all 0.2s ease;
       cursor: text;
@@ -318,7 +322,7 @@ form {
           outline: none;
           background-color: #fff;
           border: 2px solid #667eea;
-          padding: 2px 6px; // Adjust for border
+          padding: 0px 4px; // Adjust for border
           box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
@@ -343,13 +347,13 @@ form {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 8px;
+    padding: 2px 6px; // Reduced padding
     background: #f0f0f0;
     border-radius: 4px;
-    margin-left: 8px;
+    margin-left: 4px;
 
     .price-label {
-      font-size: 10px;
+      font-size: 9px; // Reduced from 10px
       color: #666;
       font-weight: 500;
     }
@@ -357,7 +361,7 @@ form {
     .price-value {
       font-weight: 600;
       color: #333;
-      font-size: 12px;
+      font-size: 11px; // Reduced from 12px
     }
   }
 }
@@ -395,15 +399,6 @@ form {
   }
 }
 
-// Stock item row (main content)
-.stock-item-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  min-height: 48px;
-}
-
 // No results message
 .no-results {
   display: flex;
@@ -432,6 +427,7 @@ form {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; // Prevent chips from shrinking
 
   .chip-label {
     font-size: 12px;
@@ -439,9 +435,29 @@ form {
     font-weight: 500;
   }
 
-  ::ng-deep mat-chip-listbox {
-    display: flex;
-    gap: 8px;
+  ::ng-deep {
+    mat-chip-listbox {
+      display: flex;
+      gap: 8px;
+    }
+
+    mat-chip-option {
+      &.active-filter {
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        color: white !important;
+
+        mat-icon {
+          color: white !important;
+        }
+      }
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        margin-right: 4px;
+      }
+    }
   }
 }
 
@@ -456,6 +472,7 @@ form {
   border-radius: 6px;
   color: #856404;
   margin-top: 16px;
+  flex-shrink: 0; // Prevent warning from shrinking
 
   mat-icon {
     color: #ffc107;

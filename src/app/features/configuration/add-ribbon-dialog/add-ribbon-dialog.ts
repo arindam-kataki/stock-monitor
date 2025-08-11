@@ -437,7 +437,6 @@ export class AddRibbonDialogComponent implements OnInit, AfterViewInit {
     message: string,
     type: 'success' | 'error' | 'warning' = 'success'
   ): void {
-    // Import MatSnackBar if not already imported
     const snackBarRef = this.snackBar.open(message, 'Close', {
       duration: 3000,
       horizontalPosition: 'right',

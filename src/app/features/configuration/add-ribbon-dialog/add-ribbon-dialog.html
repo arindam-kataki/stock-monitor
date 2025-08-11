@@ -52,14 +52,16 @@
     <div class="stocks-section" *ngIf="selectedCategory">
       <!-- Header with controls -->
       <div class="stocks-header">
-        <h3>
-          Select Stocks & Set Alerts
-          <mat-chip class="selection-chip">
-            {{ selectedStockCount }} / {{ totalStockCount }} selected
-          </mat-chip>
-        </h3>
+        <div class="header-left">
+          <h3>
+            Select Stocks & Set Alerts
+            <mat-chip class="selection-chip">
+              {{ selectedStockCount }} / {{ totalStockCount }} selected
+            </mat-chip>
+          </h3>
+        </div>
 
-        <div class="stock-controls">
+        <div class="header-right">
           <!-- Search -->
           <mat-form-field appearance="outline" class="search-field">
             <mat-label>Search stocks</mat-label>
@@ -78,31 +80,6 @@
               <mat-icon>clear</mat-icon>
             </button>
           </mat-form-field>
-
-          <!-- Quick Actions -->
-          <div class="quick-actions">
-            <button
-              mat-stroked-button
-              (click)="toggleSelectAll()"
-              [color]="selectAllState ? 'primary' : ''"
-            >
-              <mat-icon>{{
-                selectAllState ? "check_box" : "check_box_outline_blank"
-              }}</mat-icon>
-              {{ selectAllState ? "Deselect All" : "Select All" }}
-            </button>
-
-            <button
-              mat-stroked-button
-              (click)="showOnlySelected = !showOnlySelected"
-              [color]="showOnlySelected ? 'primary' : ''"
-            >
-              <mat-icon>{{
-                showOnlySelected ? "visibility" : "visibility_off"
-              }}</mat-icon>
-              Show Selected
-            </button>
-          </div>
         </div>
       </div>
 
@@ -204,7 +181,7 @@
 
       <!-- Quick Selection Chips -->
       <div class="quick-select-chips">
-        <span class="chip-label">Quick select:</span>
+        <span class="chip-label">Quick actions:</span>
         <mat-chip-listbox>
           <mat-chip-option (click)="selectTopN(5)">Top 5</mat-chip-option>
           <mat-chip-option (click)="selectTopN(10)">Top 10</mat-chip-option>
@@ -214,6 +191,15 @@
           <mat-chip-option (click)="deselectAll()" color="warn"
             >Clear All</mat-chip-option
           >
+          <mat-chip-option
+            (click)="showOnlySelected = !showOnlySelected"
+            [class.active-filter]="showOnlySelected"
+          >
+            <mat-icon>{{
+              showOnlySelected ? "visibility" : "visibility_off"
+            }}</mat-icon>
+            Show Selected
+          </mat-chip-option>
         </mat-chip-listbox>
       </div>
     </div>
