@@ -57,3 +57,42 @@ body {
     border-radius: 16px !important;
   }
 }
+
+// src/styles.scss (add these snackbar styles to your global styles)
+
+// Snackbar styles
+.snackbar-success {
+  .mdc-snackbar__surface {
+    background-color: #4caf50 !important;
+  }
+  .mat-mdc-snack-bar-label {
+    color: white !important;
+  }
+  .mat-mdc-button {
+    color: white !important;
+  }
+}
+
+.snackbar-error {
+  .mdc-snackbar__surface {
+    background-color: #f44336 !important;
+  }
+  .mat-mdc-snack-bar-label {
+    color: white !important;
+  }
+  .mat-mdc-button {
+    color: white !important;
+  }
+}
+
+.snackbar-warning {
+  .mdc-snackbar__surface {
+    background-color: #ff9800 !important;
+  }
+  .mat-mdc-snack-bar-label {
+    color: white !important;
+  }
+  .mat-mdc-button {
+    color: white !important;
+  }
+}

@@ -11,7 +11,7 @@ export interface Stock {
   changePercent?: number;
   volume?: number;
   marketCap?: string;
-  sector?: string; // Optional sector field
+  sector?: string;
   description?: string;
 }
 
@@ -23,8 +23,6 @@ export interface StockAlert {
   symbol: string;
   highValue?: number;
   lowValue?: number;
-  highEnabled?: boolean;
-  lowEnabled?: boolean;
 }
 
 /**
@@ -54,7 +52,7 @@ export interface Ribbon {
   orderIndex: number;
   isActive: boolean;
   selectedStocks: string[]; // Array of stock symbols
-  stockAlerts?: StockAlert[];
+  stockAlerts?: StockAlert[]; // Alert configurations for stocks
   createdAt?: string;
   updatedAt?: string;
 }
@@ -67,8 +65,6 @@ export interface StockSelectionWithAlerts {
   selected: boolean;
   highValue?: number;
   lowValue?: number;
-  highEnabled?: boolean;
-  lowEnabled?: boolean;
 }
 
 /**

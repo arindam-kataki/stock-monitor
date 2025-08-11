@@ -212,13 +212,16 @@ export class StockDatabase {
 
       -- Ribbon stock selections
       CREATE TABLE IF NOT EXISTS ribbon_stocks (
-        ribbon_id INTEGER NOT NULL,
-        symbol TEXT NOT NULL,
-        is_selected BOOLEAN DEFAULT 1,
-        added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (ribbon_id, symbol),
-        FOREIGN KEY (ribbon_id) REFERENCES ribbons(id) ON DELETE CASCADE,
-        FOREIGN KEY (symbol) REFERENCES stock_metadata(symbol) ON DELETE CASCADE
+          ribbon_id INTEGER NOT NULL,
+          symbol TEXT NOT NULL,
+          is_selected BOOLEAN DEFAULT 1,
+          high_value REAL,
+          low_value REAL,
+          added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (ribbon_id, symbol),
+          FOREIGN KEY (ribbon_id) REFERENCES ribbons(id) ON DELETE CASCADE,
+          FOREIGN KEY (symbol) REFERENCES stock_metadata(symbol) ON DELETE CASCADE
       );
 
       -- Create indexes for performance
@@ -554,37 +557,61 @@ export class StockDatabase {
         r.category_id,
         r.icon,
         r.color,
-        r.order_index as orderIndex,
-        r.is_active as isActive,
-        r.created_at as createdAt,
-        r.updated_at as updatedAt,
-        c.name as categoryName,
-        GROUP_CONCAT(rs.symbol) as selectedStocksStr
+        r.order_index,
+        r.is_active,
+        r.created_at,
+        r.updated_at,
+        c.name as categoryName
       FROM ribbons r
       LEFT JOIN categories c ON r.category_id = c.id
-      LEFT JOIN ribbon_stocks rs ON r.id = rs.ribbon_id
       WHERE r.user_id = ?
-      GROUP BY r.id
       ORDER BY r.order_index
     `
       )
       .all(userId) as any[];
 
-    return ribbons.map((ribbon: any) => ({
-      id: ribbon.id,
-      name: ribbon.name,
-      categoryId: ribbon.category_id,
-      categoryName: ribbon.categoryName,
-      icon: ribbon.icon,
-      color: ribbon.color,
-      orderIndex: ribbon.orderIndex,
-      isActive: ribbon.isActive === 1,
-      selectedStocks: ribbon.selectedStocksStr
-        ? ribbon.selectedStocksStr.split(',')
-        : [],
-      createdAt: ribbon.createdAt,
-      updatedAt: ribbon.updatedAt,
-    }));
+    // For each ribbon, get its stocks and alerts
+    return ribbons.map((ribbon: any) => {
+      // Get all stocks for this ribbon (selected and with alerts)
+      const stocks = this.db
+        .prepare(
+          `
+        SELECT symbol, is_selected, high_value, low_value 
+        FROM ribbon_stocks 
+        WHERE ribbon_id = ?
+      `
+        )
+        .all(ribbon.id) as any[];
+
+      // Filter selected stocks
+      const selectedStocks = stocks
+        .filter((s: any) => s.is_selected === 1)
+        .map((s: any) => s.symbol);
+
+      // Get all alerts (even for non-selected stocks)
+      const stockAlerts = stocks
+        .filter((s: any) => s.high_value !== null || s.low_value !== null)
+        .map((s: any) => ({
+          symbol: s.symbol,
+          highValue: s.high_value,
+          lowValue: s.low_value,
+        }));
+
+      return {
+        id: ribbon.id,
+        name: ribbon.name,
+        categoryId: ribbon.category_id,
+        categoryName: ribbon.categoryName,
+        icon: ribbon.icon,
+        color: ribbon.color,
+        orderIndex: ribbon.order_index,
+        isActive: ribbon.is_active === 1,
+        selectedStocks,
+        stockAlerts: stockAlerts.length > 0 ? stockAlerts : undefined,
+        createdAt: ribbon.created_at,
+        updatedAt: ribbon.updated_at,
+      };
+    });
   }
 
   // Get single ribbon
@@ -636,15 +663,20 @@ export class StockDatabase {
   }
 
   // Create ribbon
-  createRibbon(data: {
-    userId?: string;
-    name: string;
-    categoryId: string;
-    icon?: string;
-    color?: string;
-    orderIndex?: number;
-    isActive?: boolean;
-  }): number {
+createRibbon(data: any): number {
+    const {
+      userId = 'default',
+      name,
+      categoryId,
+      icon,
+      color,
+      orderIndex,
+      isActive,
+      selectedStocks = [],
+      stockAlerts = [],
+    } = data;
+
+    // Create the ribbon
     const result = this.db
       .prepare(
         `
@@ -654,17 +686,57 @@ export class StockDatabase {
     `
       )
       .run(
-        data.userId || 'default',
-        data.name,
-        data.categoryId,
-        data.icon || '📊',
-        data.color || '#667eea',
-        data.orderIndex || 0,
-        data.isActive !== false ? 1 : 0
+        userId,
+        name,
+        categoryId,
+        icon || '📊',
+        color || '#667eea',
+        orderIndex || 0,
+        isActive !== false ? 1 : 0
       );
 
-    return result.lastInsertRowid as number;
+    const ribbonId = result.lastInsertRowid as number;
+
+    // Insert stocks with alerts
+    if (selectedStocks.length > 0 || stockAlerts.length > 0) {
+      const insertStmt = this.db.prepare(`
+        INSERT INTO ribbon_stocks (ribbon_id, symbol, is_selected, high_value, low_value, updated_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+      `);
+
+      // Add selected stocks with their alerts
+      for (const symbol of selectedStocks) {
+        const alert = stockAlerts?.find((a: any) => a.symbol === symbol);
+        insertStmt.run(
+          ribbonId,
+          symbol,
+          1,
+          alert?.highValue ?? null,
+          alert?.lowValue ?? null
+        );
+      }
+
+      // Also save alerts for non-selected stocks
+      if (stockAlerts) {
+        for (const alert of stockAlerts) {
+          if (!selectedStocks.includes(alert.symbol)) {
+            if (alert.highValue !== undefined || alert.lowValue !== undefined) {
+              insertStmt.run(
+                ribbonId,
+                alert.symbol,
+                0, // not selected
+                alert.highValue ?? null,
+                alert.lowValue ?? null
+              );
+            }
+          }
+        }
+      }
+    }
+
+    return ribbonId;
   }
+
 
   // Add stock to ribbon
   addStockToRibbon(ribbonId: number, symbol: string): void {
@@ -705,29 +777,44 @@ export class StockDatabase {
   }
 
   // Update ribbon stocks
-  updateRibbonStocks(ribbonId: number, symbols: string[]): void {
-    // Start transaction
-    const deleteStmt = this.db.prepare(
-      'DELETE FROM ribbon_stocks WHERE ribbon_id = ?'
-    );
+  updateRibbonStocks(ribbonId: number, selectedStocks: string[], stockAlerts?: any[]): void {
+    // Delete existing stocks
+    this.db.prepare('DELETE FROM ribbon_stocks WHERE ribbon_id = ?').run(ribbonId);
+
+    // Insert stocks with alerts
     const insertStmt = this.db.prepare(`
-      INSERT INTO ribbon_stocks (ribbon_id, symbol, is_selected)
-      VALUES (?, ?, 1)
+      INSERT INTO ribbon_stocks (ribbon_id, symbol, is_selected, high_value, low_value, updated_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
     `);
 
-    const transaction = this.db.transaction(
-      (ribbonId: number, symbols: string[]) => {
-        // Delete existing stocks
-        deleteStmt.run(ribbonId);
+    // Add selected stocks
+    for (const symbol of selectedStocks) {
+      const alert = stockAlerts?.find((a: any) => a.symbol === symbol);
+      insertStmt.run(
+        ribbonId,
+        symbol,
+        1,
+        alert?.highValue ?? null,
+        alert?.lowValue ?? null
+      );
+    }
 
-        // Add new stocks
-        for (const symbol of symbols) {
-          insertStmt.run(ribbonId, symbol);
+    // Also save alerts for non-selected stocks
+    if (stockAlerts) {
+      for (const alert of stockAlerts) {
+        if (!selectedStocks.includes(alert.symbol)) {
+          if (alert.highValue !== undefined || alert.lowValue !== undefined) {
+            insertStmt.run(
+              ribbonId,
+              alert.symbol,
+              0, // not selected
+              alert.highValue ?? null,
+              alert.lowValue ?? null
+            );
+          }
         }
       }
-    );
-
-    transaction(ribbonId, symbols);
+    }
   }
 
   // Update ribbon order

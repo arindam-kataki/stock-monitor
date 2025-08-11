@@ -22,7 +22,7 @@ h2[mat-dialog-title] {
 // Dialog content
 mat-dialog-content {
   padding: 24px 24px 16px !important;
-  min-width: 600px;
+  min-width: 700px;
   max-width: 900px;
   max-height: 80vh;
   overflow-y: auto;
@@ -174,36 +174,14 @@ form {
   }
 }
 
-// Stock grid view
-.stock-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 16px;
-  background: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-  }
-}
-
-// Stock list view
-.stock-list {
+// Compact Stock List
+.stock-list-compact {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 500px;
+  gap: 8px;
+  max-height: 450px;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px;
   background: #f8f9fa;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -218,18 +196,18 @@ form {
   }
 }
 
-// Stock item - Grid view
-.stock-item-grid {
-  padding: 12px;
+// Compact Stock Item
+.stock-item-compact {
+  display: flex;
+  flex-direction: column;
   background: white;
-  border: 2px solid #e8e8e8;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     border-color: #667eea;
   }
 
@@ -237,119 +215,77 @@ form {
     border-color: #667eea;
     background: linear-gradient(
       135deg,
-      rgba(102, 126, 234, 0.05),
-      rgba(118, 75, 162, 0.05)
+      rgba(102, 126, 234, 0.03),
+      rgba(118, 75, 162, 0.03)
     );
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    border-width: 2px;
+  }
+
+  // Main row content
+  > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: 48px;
   }
 }
 
-// Stock item - List view
-.stock-item-list {
-  padding: 16px;
-  background: white;
-  border: 2px solid #e8e8e8;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-color: #667eea;
-  }
-
-  &.selected {
-    border-color: #667eea;
-    background: linear-gradient(
-      135deg,
-      rgba(102, 126, 234, 0.05),
-      rgba(118, 75, 162, 0.05)
-    );
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-  }
-}
-
-// Stock main section
-.stock-main-section {
+// Stock left section (checkbox + info)
+.stock-left-section {
   display: flex;
   align-items: center;
-  width: 100%;
-}
+  flex: 0 0 auto;
+  min-width: 150px;
 
-// Stock checkbox and info
-.stock-checkbox {
-  width: 100%;
+  .stock-checkbox-compact {
+    ::ng-deep .mat-mdc-checkbox-label {
+      margin-left: 0;
+    }
+  }
 
-  .stock-info {
+  .stock-info-compact {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     margin-left: 8px;
 
     .stock-symbol {
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       color: #333;
+      line-height: 1.2;
     }
 
     .stock-name {
-      font-size: 12px;
+      font-size: 11px;
       color: #666;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 200px;
-    }
-
-    .stock-meta {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      color: #999;
-
-      .tiny-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
-      }
+      max-width: 120px;
+      line-height: 1.2;
     }
   }
 }
 
-// Alert settings section
-.alert-settings {
+// Alert values section (inline editable)
+.alert-values-compact {
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e8e8e8;
-  animation: slideDown 0.3s ease;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: flex-end;
 
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .alert-input-group {
+  .alert-value-wrapper {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 1;
-
-    .alert-checkbox {
-      ::ng-deep .mat-mdc-checkbox-label {
-        margin-left: 0;
-      }
-    }
+    gap: 6px;
 
     .alert-icon {
-      margin-left: 4px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
 
       &.high {
         color: #4caf50;
@@ -360,91 +296,116 @@ form {
       }
     }
 
-    .alert-field {
-      flex: 1;
-      min-width: 100px;
+    .alert-value {
+      font-size: 13px; // Same as stock symbol
+      font-weight: 600;
+      color: #333;
+      padding: 4px 8px;
+      border-radius: 4px;
+      min-width: 60px;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: text;
+      position: relative;
+      display: inline-block;
 
-      ::ng-deep {
-        .mat-mdc-form-field-wrapper {
-          padding-bottom: 0;
+      &.editable {
+        &:hover {
+          background-color: #f5f5f5;
         }
 
-        .mat-mdc-text-field-wrapper {
-          height: 40px;
+        &:focus {
+          outline: none;
+          background-color: #fff;
+          border: 2px solid #667eea;
+          padding: 2px 6px; // Adjust for border
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .mat-mdc-form-field-hint-wrapper {
-          padding: 0;
-        }
-
-        .mat-mdc-form-field-hint {
-          font-size: 10px;
-        }
-
-        input:disabled {
+        // Show placeholder when empty
+        &:empty:not(:focus)::before {
+          content: attr(data-placeholder);
           color: #999;
+          font-weight: 400;
+        }
+
+        // Add dollar prefix for non-empty values
+        &:not(:empty)::before {
+          content: "$";
+          color: #666;
+          margin-right: 2px;
         }
       }
     }
   }
 
-  .current-price {
+  .current-price-compact {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 8px 12px;
-    background: #f5f5f5;
-    border-radius: 6px;
-    min-width: 80px;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    margin-left: 8px;
 
     .price-label {
       font-size: 10px;
       color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-weight: 500;
     }
 
     .price-value {
       font-weight: 600;
       color: #333;
-      font-size: 14px;
+      font-size: 12px;
     }
   }
 }
 
-// List view specific alert styles
-.stock-item-list {
-  .alert-settings {
-    margin-top: 16px;
-    padding-top: 16px;
-    flex-wrap: wrap;
+// Stock validation error
+.stock-validation-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin: 0 8px 6px 8px;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  color: #c62828;
+  font-size: 12px;
+  animation: slideDown 0.2s ease;
 
-    .alert-input-group {
-      min-width: 200px;
+  .error-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #d32f2f;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 }
 
-// Grid view specific alert styles
-.stock-item-grid {
-  .alert-settings {
-    flex-direction: column;
-
-    .alert-input-group {
-      width: 100%;
-    }
-
-    .current-price {
-      align-self: stretch;
-      margin-top: 8px;
-    }
-  }
+// Stock item row (main content)
+.stock-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  min-height: 48px;
 }
 
 // No results message
 .no-results {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;

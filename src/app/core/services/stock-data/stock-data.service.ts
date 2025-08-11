@@ -85,9 +85,17 @@ export class StockDataService {
 
   // Create new ribbon
   createRibbon(ribbonData: RibbonFormData): Observable<Ribbon> {
-    return this.http.post<Ribbon>(`${this.apiUrl}/ribbons`, ribbonData).pipe(
+    // Ensure stockAlerts is included in the payload
+    const payload = {
+      ...ribbonData,
+      stockAlerts: ribbonData.stockAlerts || [],
+    };
+
+    console.log('Creating ribbon with payload:', payload);
+
+    return this.http.post<Ribbon>(`${this.apiUrl}/ribbons`, payload).pipe(
       tap((ribbon) => {
-        console.log('Ribbon created:', ribbon);
+        console.log('Ribbon created with alerts:', ribbon);
         const currentRibbons = this.ribbonsSubject.value;
         this.ribbonsSubject.next([...currentRibbons, ribbon]);
       }),
@@ -95,16 +103,24 @@ export class StockDataService {
     );
   }
 
-  // Update ribbon
+  // Update ribbon with alerts
   updateRibbon(
     ribbonId: number,
     data: Partial<RibbonFormData> | any
   ): Observable<Ribbon> {
+    // Ensure stockAlerts is included in the payload
+    const payload = {
+      ...data,
+      stockAlerts: data.stockAlerts || [],
+    };
+
+    console.log('Updating ribbon with payload:', payload);
+
     return this.http
-      .put<Ribbon>(`${this.apiUrl}/ribbons/${ribbonId}`, data)
+      .put<Ribbon>(`${this.apiUrl}/ribbons/${ribbonId}`, payload)
       .pipe(
         tap((updatedRibbon) => {
-          console.log('Ribbon updated:', updatedRibbon);
+          console.log('Ribbon updated with alerts:', updatedRibbon);
           const currentRibbons = this.ribbonsSubject.value;
           const index = currentRibbons.findIndex((r) => r.id === ribbonId);
           if (index !== -1) {
