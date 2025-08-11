@@ -1,4 +1,4 @@
-import { Category, Ribbon } from '../../../core/models/stock.models';
+import { Category, Ribbon, StockAlert } from '../../../core/models/stock.models';
 
 /**
  * Data passed to the Add Ribbon Dialog
@@ -18,6 +18,7 @@ export interface RibbonFormData {
   icon: string;
   color: string;
   selectedStocks: string[];
+  stockAlerts?: StockAlert[]; 
 }
 
 /**
@@ -25,6 +26,24 @@ export interface RibbonFormData {
  */
 export interface StockSelection {
   [symbol: string]: boolean;
+}
+
+/**
+ * Stock selection state with alert values
+ */
+export interface StockSelectionState {
+  selected: boolean;
+  highValue?: number;
+  lowValue?: number;
+  highEnabled?: boolean;
+  lowEnabled?: boolean;
+}
+
+/**
+ * Stock selection map
+ */
+export interface StockSelectionMap {
+  [symbol: string]: StockSelectionState;
 }
 
 /**

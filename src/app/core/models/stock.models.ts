@@ -16,6 +16,18 @@ export interface Stock {
 }
 
 /**
+ * Stock Alert Configuration
+ * Stores high/low thresholds for individual stocks in a ribbon
+ */
+export interface StockAlert {
+  symbol: string;
+  highValue?: number;
+  lowValue?: number;
+  highEnabled?: boolean;
+  lowEnabled?: boolean;
+}
+
+/**
  * Category Interface (used as templates for ribbons)
  */
 export interface Category {
@@ -42,8 +54,21 @@ export interface Ribbon {
   orderIndex: number;
   isActive: boolean;
   selectedStocks: string[]; // Array of stock symbols
+  stockAlerts?: StockAlert[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+/**
+ * Extended Stock Selection with Alerts
+ */
+export interface StockSelectionWithAlerts {
+  symbol: string;
+  selected: boolean;
+  highValue?: number;
+  lowValue?: number;
+  highEnabled?: boolean;
+  lowEnabled?: boolean;
 }
 
 /**

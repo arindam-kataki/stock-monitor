@@ -1,13 +1,15 @@
+<!-- src/app/features/configuration/add-ribbon-dialog/add-ribbon-dialog.html -->
+
 <h2 mat-dialog-title>
   <mat-icon>{{ isEditMode ? "edit" : "add_circle" }}</mat-icon>
-  {{ isEditMode ? "Edit" : "Create New" }} Ribbon
+  {{ isEditMode ? "Edit" : "Create New" }} Watch List
 </h2>
 
 <mat-dialog-content>
   <form [formGroup]="ribbonForm">
     <!-- Ribbon Name -->
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Ribbon Name</mat-label>
+      <mat-label>Watch List Name</mat-label>
       <input
         matInput
         formControlName="name"
@@ -16,7 +18,7 @@
         autocomplete="off"
       />
       <mat-icon matSuffix>label</mat-icon>
-      <mat-hint>Give your ribbon a descriptive name</mat-hint>
+      <mat-hint>Give your watch list a descriptive name</mat-hint>
       <mat-error *ngIf="ribbonForm.get('name')?.hasError('required')">
         Name is required
       </mat-error>
@@ -51,7 +53,7 @@
       <!-- Header with controls -->
       <div class="stocks-header">
         <h3>
-          Select Stocks
+          Select Stocks & Set Alerts
           <mat-chip class="selection-chip">
             {{ selectedStockCount }} / {{ totalStockCount }} selected
           </mat-chip>
@@ -77,19 +79,20 @@
             </button>
           </mat-form-field>
 
+          <!-- View Toggle -->
+          <button
+            mat-stroked-button
+            (click)="toggleView()"
+            matTooltip="Toggle between grid and list view"
+          >
+            <mat-icon>{{
+              viewMode === "grid" ? "view_list" : "view_module"
+            }}</mat-icon>
+            {{ viewMode === "grid" ? "List View" : "Grid View" }}
+          </button>
+
           <!-- Quick Actions -->
           <div class="quick-actions">
-            <button
-              mat-stroked-button
-              (click)="toggleSelectAll()"
-              [color]="selectAllState ? 'primary' : ''"
-            >
-              <mat-icon>{{
-                selectAllState ? "check_box" : "check_box_outline_blank"
-              }}</mat-icon>
-              {{ selectAllState ? "Deselect All" : "Select All" }}
-            </button>
-
             <button
               mat-stroked-button
               (click)="showOnlySelected = !showOnlySelected"
@@ -111,29 +114,97 @@
         class="selection-progress"
       ></mat-progress-bar>
 
-      <!-- Stock Grid -->
-      <div class="stock-grid">
+      <!-- Stock Grid/List View -->
+      <div [ngClass]="viewMode === 'grid' ? 'stock-grid' : 'stock-list'">
         <div
           *ngFor="let stock of filteredStocks"
-          class="stock-item"
-          [class.selected]="stockSelections[stock.symbol]"
-          (click)="toggleStock(stock.symbol)"
+          [ngClass]="
+            viewMode === 'grid' ? 'stock-item-grid' : 'stock-item-list'
+          "
+          [class.selected]="isStockSelected(stock.symbol)"
         >
-          <mat-checkbox
-            [checked]="stockSelections[stock.symbol]"
-            (click)="$event.stopPropagation()"
-            (change)="toggleStock(stock.symbol)"
-            class="stock-checkbox"
-          >
-            <div class="stock-info">
-              <span class="stock-symbol">{{ stock.symbol }}</span>
-              <span class="stock-name">{{ stock.name }}</span>
-              <div class="stock-meta" *ngIf="stock.sector">
-                <mat-icon class="tiny-icon">business</mat-icon>
-                <span>{{ stock.sector }}</span>
+          <!-- Checkbox and Stock Info -->
+          <div class="stock-main-section">
+            <mat-checkbox
+              [checked]="isStockSelected(stock.symbol)"
+              (change)="toggleStock(stock.symbol)"
+              class="stock-checkbox"
+            >
+              <div class="stock-info">
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-name">{{ stock.name }}</span>
+                <div class="stock-meta" *ngIf="stock.sector">
+                  <mat-icon class="tiny-icon">business</mat-icon>
+                  <span>{{ stock.sector }}</span>
+                </div>
               </div>
+            </mat-checkbox>
+          </div>
+
+          <!-- Alert Settings (shown when stock is selected) -->
+          <div
+            class="alert-settings"
+            *ngIf="isStockSelected(stock.symbol)"
+            [@expandCollapse]
+          >
+            <!-- High Value Alert -->
+            <div class="alert-input-group">
+              <mat-checkbox
+                [(ngModel)]="stockSelections[stock.symbol].highEnabled"
+                [ngModelOptions]="{ standalone: true }"
+                class="alert-checkbox"
+              >
+                <mat-icon class="alert-icon high">trending_up</mat-icon>
+              </mat-checkbox>
+              <mat-form-field appearance="outline" class="alert-field">
+                <mat-label>High Alert</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  [(ngModel)]="stockSelections[stock.symbol].highValue"
+                  [ngModelOptions]="{ standalone: true }"
+                  [disabled]="!stockSelections[stock.symbol].highEnabled"
+                />
+                <span matPrefix>$</span>
+                <mat-hint>Alert when price goes above</mat-hint>
+              </mat-form-field>
             </div>
-          </mat-checkbox>
+
+            <!-- Low Value Alert -->
+            <div class="alert-input-group">
+              <mat-checkbox
+                [(ngModel)]="stockSelections[stock.symbol].lowEnabled"
+                [ngModelOptions]="{ standalone: true }"
+                class="alert-checkbox"
+              >
+                <mat-icon class="alert-icon low">trending_down</mat-icon>
+              </mat-checkbox>
+              <mat-form-field appearance="outline" class="alert-field">
+                <mat-label>Low Alert</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  [(ngModel)]="stockSelections[stock.symbol].lowValue"
+                  [ngModelOptions]="{ standalone: true }"
+                  [disabled]="!stockSelections[stock.symbol].lowEnabled"
+                />
+                <span matPrefix>$</span>
+                <mat-hint>Alert when price goes below</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <!-- Current Price Reference -->
+            <div class="current-price" *ngIf="stock.price">
+              <span class="price-label">Current:</span>
+              <span class="price-value"
+                >${{ stock.price | number : "1.2-2" }}</span
+              >
+            </div>
+          </div>
         </div>
 
         <!-- No results message -->
@@ -165,7 +236,7 @@
       *ngIf="selectedCategory && selectedStockCount === 0"
     >
       <mat-icon>warning</mat-icon>
-      <span>Please select at least one stock to create the ribbon</span>
+      <span>Please select at least one stock to create the watch list</span>
     </div>
   </form>
 </mat-dialog-content>
@@ -179,6 +250,6 @@
     [disabled]="!isFormValid"
   >
     <mat-icon>{{ isEditMode ? "save" : "add" }}</mat-icon>
-    {{ isEditMode ? "Update" : "Create" }} Ribbon
+    {{ isEditMode ? "Update" : "Create" }} Watch List
   </button>
 </mat-dialog-actions>
