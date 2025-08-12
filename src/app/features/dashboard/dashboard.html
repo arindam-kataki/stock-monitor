@@ -23,39 +23,67 @@
     *ngIf="!loading && !error && activeRibbons.length > 0"
     class="dashboard-content"
   >
-    <!-- Main Chart Area -->
+    <!-- Main Chart Area (Full Width - No Sidebar) -->
     <div class="chart-area">
-      <!-- Header -->
-      <div class="chart-header">
-        <div class="header-left">
-          <h2 *ngIf="currentRibbon">
-            <span class="ribbon-icon">{{ currentRibbon.icon }}</span>
-            {{ currentRibbon.name }}
-          </h2>
-          <mat-chip
-            class="status-badge"
-            [class.auto]="isAutoCycling"
-            [class.manual]="!isAutoCycling"
+      <!-- New Watch Navigation Header -->
+      <div class="watch-navigation">
+        <!-- Watch Selector Group -->
+        <div class="watch-selector-group">
+          <!-- Left Arrow (Manual Mode Only) -->
+          <button
+            mat-icon-button
+            class="nav-arrow"
+            *ngIf="!isAutoCycling"
+            (click)="previousRibbon()"
+            matTooltip="Previous watch"
           >
-            {{ isAutoCycling ? "AUTO-CYCLING" : "MANUAL" }}
-          </mat-chip>
-        </div>
+            <mat-icon>chevron_left</mat-icon>
+          </button>
 
-        <!-- View Mode Toggle -->
-        <mat-button-toggle-group
-          [(ngModel)]="viewMode"
-          class="view-mode-toggle"
-        >
-          <mat-button-toggle value="grid" matTooltip="Grid view">
-            <mat-icon>grid_view</mat-icon>
-          </mat-button-toggle>
-          <mat-button-toggle value="list" matTooltip="List view">
-            <mat-icon>view_list</mat-icon>
-          </mat-button-toggle>
-          <mat-button-toggle value="chart" matTooltip="Chart view">
-            <mat-icon>show_chart</mat-icon>
-          </mat-button-toggle>
-        </mat-button-toggle-group>
+          <!-- Watch Dropdown Trigger -->
+          <button
+            class="watch-dropdown-trigger"
+            [matMenuTriggerFor]="watchMenu"
+            (menuOpened)="isDropdownOpen = true"
+            (menuClosed)="isDropdownOpen = false"
+          >
+            <span class="watch-name">
+              <mat-icon class="watch-icon">{{
+                currentRibbon?.icon || "dashboard"
+              }}</mat-icon>
+              {{ currentRibbon?.name || "Select Watch" }}
+            </span>
+            <div class="watch-status">
+              <span
+                class="status-indicator"
+                [class.auto]="isAutoCycling"
+                [class.manual]="!isAutoCycling && !manualOverride"
+                [class.paused]="manualOverride"
+              ></span>
+              <span class="status-text">{{ getStatusText() }}</span>
+            </div>
+            <mat-icon class="dropdown-arrow">
+              {{ isDropdownOpen ? "arrow_drop_up" : "arrow_drop_down" }}
+            </mat-icon>
+            <!-- Cycle Progress Bar -->
+            <div
+              class="cycle-progress"
+              *ngIf="isAutoCycling && !manualOverride"
+              [style.width.%]="cycleProgress"
+            ></div>
+          </button>
+
+          <!-- Right Arrow (Manual Mode Only) -->
+          <button
+            mat-icon-button
+            class="nav-arrow"
+            *ngIf="!isAutoCycling"
+            (click)="nextRibbon()"
+            matTooltip="Next watch"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
 
         <!-- Time Range Selector -->
         <div class="time-range-selector">
@@ -69,8 +97,23 @@
           </button>
         </div>
 
-        <!-- Actions -->
-        <div class="header-actions">
+        <!-- View Mode & Actions -->
+        <div class="nav-actions">
+          <mat-button-toggle-group
+            [(ngModel)]="viewMode"
+            class="view-mode-toggle"
+          >
+            <mat-button-toggle value="grid" matTooltip="Grid view">
+              <mat-icon>grid_view</mat-icon>
+            </mat-button-toggle>
+            <mat-button-toggle value="list" matTooltip="List view">
+              <mat-icon>view_list</mat-icon>
+            </mat-button-toggle>
+            <mat-button-toggle value="chart" matTooltip="Chart view">
+              <mat-icon>show_chart</mat-icon>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+
           <button
             mat-icon-button
             (click)="refreshDashboard()"
@@ -81,193 +124,199 @@
 
           <button
             mat-icon-button
-            (click)="exportDashboardData()"
-            matTooltip="Export data"
+            routerLink="/display"
+            matTooltip="Display settings"
           >
-            <mat-icon>download</mat-icon>
+            <mat-icon>settings</mat-icon>
           </button>
         </div>
       </div>
 
-      <!-- Statistics Bar -->
-      <div class="statistics-bar" *ngIf="selectedStocks.length > 0">
-        <div class="stat-item">
-          <span class="stat-label">Stocks</span>
-          <span class="stat-value">{{ selectedStocks.length }}</span>
-        </div>
-
-        <mat-divider vertical></mat-divider>
-
-        <div class="stat-item">
-          <span class="stat-label">Market Cap</span>
-          <span class="stat-value">{{ formatMarketCap(totalMarketCap) }}</span>
-        </div>
-
-        <mat-divider vertical></mat-divider>
-
-        <div class="stat-item">
-          <span class="stat-label">Avg Change</span>
-          <span
-            class="stat-value"
-            [class.positive]="averageChange > 0"
-            [class.negative]="averageChange < 0"
+      <!-- Chart Content Area -->
+      <div class="chart-content" *ngIf="currentRibbon">
+        <!-- Grid View -->
+        <div class="stock-charts-grid" *ngIf="viewMode === 'grid'">
+          <mat-card
+            *ngFor="let stock of selectedStocks"
+            class="stock-chart-card"
           >
-            {{ formatChangePercent(averageChange) }}
-          </span>
-        </div>
-
-        <mat-divider vertical></mat-divider>
-
-        <div class="stat-item" *ngIf="topGainer">
-          <span class="stat-label">Top Gainer</span>
-          <span class="stat-value positive">
-            {{ topGainer.symbol }}
-            {{ formatChangePercent(topGainer.changePercent) }}
-          </span>
-        </div>
-
-        <mat-divider vertical></mat-divider>
-
-        <div class="stat-item" *ngIf="topLoser">
-          <span class="stat-label">Top Loser</span>
-          <span class="stat-value negative">
-            {{ topLoser.symbol }}
-            {{ formatChangePercent(topLoser.changePercent) }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Grid View -->
-      <div class="stock-charts-grid" *ngIf="viewMode === 'grid'">
-        <mat-card *ngFor="let stock of selectedStocks" class="stock-chart-card">
-          <mat-card-header>
-            <div class="stock-header">
-              <div class="stock-info">
-                <span class="stock-symbol">{{ stock.symbol }}</span>
-                <span class="stock-name">{{ stock.name }}</span>
+            <mat-card-header>
+              <div class="stock-header">
+                <div class="stock-info">
+                  <span class="stock-symbol">{{ stock.symbol }}</span>
+                  <span class="stock-name">{{ stock.name }}</span>
+                </div>
+                <span class="stock-price">
+                  {{ getLatestPrice(stock.symbol) | currency }}
+                </span>
               </div>
-              <div class="stock-price-info">
-                <div class="stock-price">${{ formatPrice(stock.price) }}</div>
-                <div
-                  class="price-change"
-                  [ngClass]="getStockChangeClass(stock)"
-                >
-                  <mat-icon>{{
-                    stock.change && stock.change >= 0
+            </mat-card-header>
+
+            <mat-card-content>
+              <div
+                class="price-change"
+                [class.positive]="getPriceChange(stock.symbol) >= 0"
+                [class.negative]="getPriceChange(stock.symbol) < 0"
+              >
+                <mat-icon>
+                  {{
+                    getPriceChange(stock.symbol) >= 0
                       ? "trending_up"
                       : "trending_down"
-                  }}</mat-icon>
-                  <span>{{ formatChange(stock.change) }}</span>
-                  <span>({{ formatChangePercent(stock.changePercent) }})</span>
-                </div>
+                  }}
+                </mat-icon>
+                <span
+                  >{{ getPriceChange(stock.symbol) | number : "1.2-2" }}%</span
+                >
+                <span class="change-amount">
+                  ({{ getPriceChangeAmount(stock.symbol) | currency }})
+                </span>
               </div>
-            </div>
-          </mat-card-header>
 
-          <mat-card-content>
-            <!-- Stock Chart Component -->
-            <app-stock-chart
-              [symbol]="stock.symbol"
-              [data]="getChartData(stock.symbol)"
-              [timeRange]="selectedTimeRange"
-              [showVolume]="settings.showVolume"
-              [height]="200"
-            ></app-stock-chart>
-
-            <!-- Additional Info -->
-            <div class="stock-details" *ngIf="settings.showVolume">
-              <div class="detail-item">
-                <span class="detail-label">Volume</span>
-                <span class="detail-value">{{
-                  formatVolume(stock.volume)
-                }}</span>
+              <div class="chart-container">
+                <app-stock-chart
+                  [symbol]="stock.symbol"
+                  [data]="getChartData(stock.symbol)"
+                  [timeRange]="selectedTimeRange"
+                  [showVolume]="settings.showVolume"
+                  [height]="200"
+                ></app-stock-chart>
               </div>
-              <div class="detail-item" *ngIf="stock.marketCap">
-                <span class="detail-label">Market Cap</span>
-                <span class="detail-value">{{ stock.marketCap }}</span>
+
+              <div class="stock-actions">
+                <button
+                  mat-icon-button
+                  matTooltip="View details"
+                  (click)="viewStockDetails(stock)"
+                >
+                  <mat-icon>info</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  matTooltip="Add alert"
+                  (click)="addAlert(stock)"
+                >
+                  <mat-icon>notifications</mat-icon>
+                </button>
               </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
 
-      <!-- List View -->
-      <div class="stock-list-view" *ngIf="viewMode === 'list'">
-        <mat-card>
-          <mat-card-content>
-            <table class="stock-table">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>Name</th>
-                  <th>Price</th>
-                  <th>Change</th>
-                  <th>Change %</th>
-                  <th *ngIf="settings.showVolume">Volume</th>
-                  <th>Market Cap</th>
-                  <th>Chart</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let stock of selectedStocks">
-                  <td class="symbol-cell">{{ stock.symbol }}</td>
-                  <td class="name-cell">{{ stock.name }}</td>
-                  <td class="price-cell">${{ formatPrice(stock.price) }}</td>
-                  <td [ngClass]="getStockChangeClass(stock)">
-                    {{ formatChange(stock.change) }}
+        <!-- List View -->
+        <div class="stock-list-view" *ngIf="viewMode === 'list'">
+          <mat-card class="list-card">
+            <mat-card-content>
+              <table
+                mat-table
+                [dataSource]="selectedStocks"
+                class="stock-table"
+              >
+                <!-- Symbol Column -->
+                <ng-container matColumnDef="symbol">
+                  <th mat-header-cell *matHeaderCellDef>Symbol</th>
+                  <td mat-cell *matCellDef="let stock">
+                    <strong>{{ stock.symbol }}</strong>
                   </td>
-                  <td [ngClass]="getStockChangeClass(stock)">
-                    {{ formatChangePercent(stock.changePercent) }}
-                  </td>
-                  <td *ngIf="settings.showVolume">
-                    {{ formatVolume(stock.volume) }}
-                  </td>
-                  <td>{{ stock.marketCap || "N/A" }}</td>
-                  <td class="chart-cell">
-                    <app-stock-chart
-                      [symbol]="stock.symbol"
-                      [data]="getChartData(stock.symbol)"
-                      [timeRange]="selectedTimeRange"
-                      [showVolume]="false"
-                      [height]="40"
-                      [minimal]="true"
-                    ></app-stock-chart>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </mat-card-content>
-        </mat-card>
-      </div>
+                </ng-container>
 
-      <!-- Chart View -->
-      <div class="stock-chart-view" *ngIf="viewMode === 'chart'">
-        <mat-card class="full-chart-card">
-          <mat-card-header>
-            <mat-card-title>Combined Performance</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="chart-container">
-              <app-stock-chart
-                [symbol]="'combined'"
-                [data]="getChartData('combined')"
-                [timeRange]="selectedTimeRange"
-                [showVolume]="settings.showVolume"
-                [height]="400"
-                [stocks]="selectedStocks"
-              ></app-stock-chart>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
+                <!-- Name Column -->
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Name</th>
+                  <td mat-cell *matCellDef="let stock">{{ stock.name }}</td>
+                </ng-container>
 
-      <!-- No Stocks Message -->
-      <div *ngIf="selectedStocks.length === 0" class="no-stocks">
-        <mat-icon>info</mat-icon>
-        <p>No stocks selected for this ribbon</p>
-        <button mat-raised-button color="primary" routerLink="/watches">
-          Manage Watches
-        </button>
+                <!-- Price Column -->
+                <ng-container matColumnDef="price">
+                  <th mat-header-cell *matHeaderCellDef>Price</th>
+                  <td mat-cell *matCellDef="let stock">
+                    {{ getLatestPrice(stock.symbol) | currency }}
+                  </td>
+                </ng-container>
+
+                <!-- Change Column -->
+                <ng-container matColumnDef="change">
+                  <th mat-header-cell *matHeaderCellDef>Change</th>
+                  <td
+                    mat-cell
+                    *matCellDef="let stock"
+                    [class.positive]="getPriceChange(stock.symbol) >= 0"
+                    [class.negative]="getPriceChange(stock.symbol) < 0"
+                  >
+                    <mat-icon class="trend-icon">
+                      {{
+                        getPriceChange(stock.symbol) >= 0
+                          ? "trending_up"
+                          : "trending_down"
+                      }}
+                    </mat-icon>
+                    {{ getPriceChange(stock.symbol) | number : "1.2-2" }}%
+                  </td>
+                </ng-container>
+
+                <!-- Volume Column -->
+                <ng-container matColumnDef="volume">
+                  <th mat-header-cell *matHeaderCellDef>Volume</th>
+                  <td mat-cell *matCellDef="let stock">
+                    {{ getVolume(stock.symbol) | number }}
+                  </td>
+                </ng-container>
+
+                <!-- Actions Column -->
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef>Actions</th>
+                  <td mat-cell *matCellDef="let stock">
+                    <button
+                      mat-icon-button
+                      matTooltip="View chart"
+                      (click)="viewStockDetails(stock)"
+                    >
+                      <mat-icon>show_chart</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr
+                  mat-row
+                  *matRowDef="let row; columns: displayedColumns"
+                ></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Chart View -->
+        <div class="stock-chart-view" *ngIf="viewMode === 'chart'">
+          <mat-card class="full-chart-card">
+            <mat-card-header>
+              <mat-card-title>
+                Combined Performance - {{ currentRibbon.name }}
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="chart-container">
+                <app-stock-chart
+                  [symbol]="'combined'"
+                  [data]="getCombinedChartData()"
+                  [timeRange]="selectedTimeRange"
+                  [showVolume]="settings.showVolume"
+                  [height]="400"
+                  [stocks]="selectedStocks"
+                ></app-stock-chart>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- No Stocks Message -->
+        <div *ngIf="selectedStocks.length === 0" class="no-stocks">
+          <mat-icon>info</mat-icon>
+          <p>No stocks selected for this watch</p>
+          <button mat-raised-button color="primary" routerLink="/configuration">
+            Configure Watches
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -279,15 +328,118 @@
   >
     <mat-card class="empty-state-card">
       <mat-icon class="empty-icon">dashboard_customize</mat-icon>
-      <h2>No Active Ribbons</h2>
+      <h2>No Active Watches</h2>
       <p>
-        You need to create and activate at least one ribbon to view the
+        You need to create and activate at least one watch list to view the
         dashboard.
       </p>
       <button mat-raised-button color="primary" routerLink="/configuration">
-        <mat-icon>settings</mat-icon>
-        Go to Configuration
+        <mat-icon>add_circle</mat-icon>
+        Create Watch List
       </button>
     </mat-card>
   </div>
 </div>
+
+<!-- Watch Dropdown Menu -->
+<mat-menu #watchMenu="matMenu" class="watch-dropdown-menu">
+  <!-- Watches List Section -->
+  <div class="menu-section watches-section" (click)="$event.stopPropagation()">
+    <div class="menu-title">Your Watches</div>
+    <button
+      mat-menu-item
+      *ngFor="let ribbon of activeRibbons; let i = index"
+      (click)="manualSelectRibbon(i)"
+      [class.active]="i === currentRibbonIndex"
+      class="watch-menu-item"
+    >
+      <div class="watch-item">
+        <span class="watch-icon">{{ ribbon.icon }}</span>
+        <div class="watch-details">
+          <span class="watch-label">{{ ribbon.name }}</span>
+          <span class="stock-count"
+            >{{ ribbon.selectedStocks.length }} stocks</span
+          >
+        </div>
+        <!-- Performance indicator could go here -->
+        <mat-icon *ngIf="i === currentRibbonIndex" class="check-icon"
+          >check</mat-icon
+        >
+      </div>
+    </button>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Playback Controls Section -->
+  <div class="menu-section controls-section" (click)="$event.stopPropagation()">
+    <div class="menu-title">Playback Controls</div>
+
+    <!-- Auto-cycle Toggle -->
+    <div class="control-row">
+      <span class="control-label">Auto-cycle</span>
+      <mat-slide-toggle
+        [(ngModel)]="settings.autoCycle"
+        (change)="toggleAutoCycle()"
+        color="primary"
+      >
+      </mat-slide-toggle>
+    </div>
+
+    <!-- Play/Pause Controls -->
+    <div class="control-row" *ngIf="settings.autoCycle">
+      <div class="play-controls">
+        <button mat-mini-fab (click)="previousRibbon()" matTooltip="Previous">
+          <mat-icon>skip_previous</mat-icon>
+        </button>
+        <button
+          mat-mini-fab
+          [color]="isAutoCycling ? 'warn' : 'primary'"
+          (click)="isAutoCycling ? pauseAutoCycle() : resumeAutoCycle()"
+          [matTooltip]="isAutoCycling ? 'Pause' : 'Play'"
+        >
+          <mat-icon>{{ isAutoCycling ? "pause" : "play_arrow" }}</mat-icon>
+        </button>
+        <button mat-mini-fab (click)="nextRibbon()" matTooltip="Next">
+          <mat-icon>skip_next</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Interval Slider -->
+    <div class="control-row interval-control" *ngIf="settings.autoCycle">
+      <div class="interval-label">
+        <span class="control-label">Interval</span>
+        <span class="interval-value">{{ settings.cycleInterval }}s</span>
+      </div>
+      <mat-slider
+        min="5"
+        max="60"
+        step="5"
+        discrete
+        [displayWith]="formatLabel"
+        color="primary"
+      >
+        <input
+          matSliderThumb
+          [(ngModel)]="settings.cycleInterval"
+          (ngModelChange)="updateCycleInterval()"
+        />
+      </mat-slider>
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- Footer Links -->
+  <div class="menu-footer">
+    <a mat-menu-item routerLink="/configuration">
+      <mat-icon>settings</mat-icon>
+      <span>Configure Watches</span>
+    </a>
+    <a mat-menu-item routerLink="/display">
+      <mat-icon>tune</mat-icon>
+      <span>Display Settings</span>
+    </a>
+  </div>
+</mat-menu>

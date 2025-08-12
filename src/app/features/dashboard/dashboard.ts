@@ -17,6 +17,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatTableModule } from '@angular/material/table';
 
 // Services and Models
 import { StockDataService } from '../../core/services/stock-data/stock-data.service';
@@ -29,6 +33,7 @@ import {
   Ribbon,
   Stock,
   ChartData,
+  ChartDataPoint,
   TimeRange,
 } from '../../core/models/stock.models';
 
@@ -52,6 +57,10 @@ import { StockChartComponent } from '../../shared/components/stock-chart/stock-c
     MatDividerModule,
     MatSnackBarModule,
     StockChartComponent,
+    MatTableModule,
+    MatMenuModule,
+    MatSlideToggleModule,
+    MatSliderModule,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -101,6 +110,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   topGainer: Stock | null = null;
   topLoser: Stock | null = null;
 
+  isDropdownOpen = false;
+  displayedColumns: string[] = [
+    'symbol',
+    'name',
+    'price',
+    'change',
+    'volume',
+    'actions',
+  ];
+
   constructor(
     private stockDataService: StockDataService,
     private settingsService: SettingsService,
@@ -122,6 +141,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.stopAutoCycle();
     this.stopRealtimeUpdates();
+  }
+
+  formatLabel(value: number): string {
+    if (value >= 60) {
+      const minutes = Math.floor(value / 60);
+      const seconds = value % 60;
+      return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+    }
+    return `${value}s`;
   }
 
   // ============== DATA LOADING ==============
@@ -330,6 +358,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pauseAutoCycle();
   }
 
+  updateCycleInterval(): void {
+    this.settingsService.updateSettings(this.settings);
+    if (this.isAutoCycling) {
+      this.pauseAutoCycle();
+      this.resumeAutoCycle();
+    }
+  }
+
+  getStatusText(): string {
+    if (!this.settings.autoCycle) return 'Manual';
+    if (this.isAutoCycling) return 'Auto';
+    if (this.manualOverride) return 'Paused';
+    return 'Stopped';
+  }
+
+  toggleAutoCycle(): void {
+    if (this.settings.autoCycle) {
+      this.resumeAutoCycle();
+    } else {
+      this.pauseAutoCycle();
+    }
+  }
+
   // ============== TIME RANGE ==============
 
   selectTimeRange(range: TimeRange): void {
@@ -387,6 +438,81 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  getPriceChange(symbol: string): number {
+    const chartData = this.stockChartData.get(symbol);
+    if (!chartData || !chartData.data || chartData.data.length < 2) return 0;
+
+    const latest = chartData.data[chartData.data.length - 1].close;
+    const previous = chartData.data[chartData.data.length - 2].close;
+    return ((latest - previous) / previous) * 100;
+  }
+
+  getLatestPrice(symbol: string): number {
+    const chartData = this.stockChartData.get(symbol);
+    if (!chartData || !chartData.data || chartData.data.length === 0) return 0;
+
+    // Get the last data point's close price
+    return chartData.data[chartData.data.length - 1].close;
+  }
+
+  getPriceChangeAmount(symbol: string): number {
+    const chartData = this.stockChartData.get(symbol);
+    if (!chartData || !chartData.data || chartData.data.length < 2) return 0;
+
+    const latest = chartData.data[chartData.data.length - 1].close;
+    const previous = chartData.data[chartData.data.length - 2].close;
+    return latest - previous;
+  }
+
+  getVolume(symbol: string): number {
+    const chartData = this.stockChartData.get(symbol);
+    if (!chartData || !chartData.data || chartData.data.length === 0) return 0;
+
+    // Get the last data point's volume
+    return chartData.data[chartData.data.length - 1].volume;
+  }
+
+  getCombinedChartData(): ChartData {
+    // This version creates a dataset suitable for showing multiple lines
+    // Your chart component would need to handle this differently
+
+    const allStockData: ChartDataPoint[] = [];
+    const stockSymbols: string[] = [];
+
+    // Collect all data points with stock symbol tags
+    for (const stock of this.selectedStocks) {
+      const data = this.stockChartData.get(stock.symbol);
+      if (data && data.data && data.data.length > 0) {
+        stockSymbols.push(stock.symbol);
+
+        // Normalize to percentage change from start
+        const basePrice = data.data[0].close;
+
+        data.data.forEach((point, index) => {
+          const normalizedPoint: ChartDataPoint = {
+            ...point,
+            // Store normalized values as percentage change
+            open: ((point.open - basePrice) / basePrice) * 100,
+            high: ((point.high - basePrice) / basePrice) * 100,
+            low: ((point.low - basePrice) / basePrice) * 100,
+            close: ((point.close - basePrice) / basePrice) * 100,
+            volume: point.volume,
+            // Add stock symbol as part of the date for identification
+            date: `${stock.symbol}_${point.date || point.timestamp || index}`,
+          };
+          allStockData.push(normalizedPoint);
+        });
+      }
+    }
+
+    return {
+      symbol: stockSymbols.join(','), // Store all symbols
+      range: this.selectedTimeRange,
+      count: allStockData.length,
+      data: allStockData,
+    };
+  }
+
   // ============== STATISTICS ==============
 
   calculateStatistics(): void {
@@ -440,6 +566,63 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     return 0;
+  }
+
+  // ============== DRILL DOWN ===================
+
+  viewStockDetails(stock: Stock): void {
+    // Option 1: Navigate to a detail page
+    // this.router.navigate(['/stock', stock.symbol]);
+
+    // Option 2: Open in a modal dialog
+    // const dialogRef = this.dialog.open(StockDetailDialog, {
+    //   width: '800px',
+    //   data: { stock, chartData: this.getChartData(stock.symbol) }
+    // });
+
+    // Option 3: Expand inline (add a property to track expanded state)
+    console.log('View details for:', stock.symbol);
+
+    // For now, just show a snackbar
+    this.snackBar.open(`Viewing ${stock.name} (${stock.symbol})`, 'Close', {
+      duration: 3000,
+      horizontalPosition: 'center',
+      verticalPosition: 'bottom',
+    });
+  }
+
+  addAlert(stock: Stock): void {
+    // You could open a dialog to configure the alert
+    // const dialogRef = this.dialog.open(AddAlertDialog, {
+    //   width: '400px',
+    //   data: { stock }
+    // });
+
+    // dialogRef.afterClosed().subscribe(result => {
+    //   if (result) {
+    //     this.saveAlert(stock, result);
+    //   }
+    // });
+
+    // For now, just show confirmation
+    this.snackBar.open(
+      `Alert configuration for ${stock.symbol} - Feature coming soon!`,
+      'OK',
+      {
+        duration: 3000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      }
+    );
+  }
+
+  // Helper method for saving alerts (future implementation)
+  private saveAlert(stock: Stock, alertConfig: any): void {
+    console.log('Saving alert:', stock.symbol, alertConfig);
+    // Implement alert saving logic
+    this.snackBar.open('Alert saved successfully', 'Close', {
+      duration: 3000,
+    });
   }
 
   // ============== UTILITY METHODS ==============
