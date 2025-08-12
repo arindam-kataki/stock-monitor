@@ -1,23 +1,57 @@
 // src/app/app.scss
-.app-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
 
-  .app-content {
-    max-width: 1400px;
-    margin: 0 auto;
-    animation: fadeIn 0.5s ease-in;
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+// Main content area
+.app-content {
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
+  position: relative;
+
+  // When sidebar is collapsed
+  &.sidebar-collapsed {
+    margin-left: 70px;
+    width: calc(100% - 70px);
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+// Remove any default padding/margin
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .app-content {
+    margin-left: 70px;
+    width: calc(100% - 70px);
+
+    &.sidebar-collapsed {
+      margin-left: 0;
+      width: 100%;
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+}
+
+// Print styles - hide navigation
+@media print {
+  app-navigation {
+    display: none;
+  }
+
+  .app-content {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }

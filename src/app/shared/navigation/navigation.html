@@ -1,19 +1,52 @@
 <!-- src/app/shared/navigation/navigation.html -->
-<nav class="navigation">
+<nav class="navigation-sidebar" [class.collapsed]="isCollapsed">
+  <!-- Toggle Button -->
+  <button
+    mat-icon-button
+    class="toggle-btn"
+    (click)="toggleSidebar()"
+    [matTooltip]="isCollapsed ? 'Expand menu' : 'Collapse menu'"
+    matTooltipPosition="right"
+  >
+    <mat-icon>{{ isCollapsed ? "menu" : "menu_open" }}</mat-icon>
+  </button>
+
+  <!-- Logo Section -->
   <div class="nav-header">
     <mat-icon class="logo">show_chart</mat-icon>
-    <h1>Stock Monitor Pro</h1>
+    <div class="logo-text" *ngIf="!isCollapsed">
+      <h1>Stock Monitor</h1>
+      <span class="version">Pro v1.0</span>
+    </div>
   </div>
 
-  <div class="nav-tabs">
-    <button
+  <!-- Navigation Items -->
+  <div class="nav-items">
+    <a
       *ngFor="let item of navItems"
-      class="nav-tab"
-      [class.active]="isActive(item.path)"
-      (click)="navigate(item.path)"
+      class="nav-item"
+      [routerLink]="item.path"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      [matTooltip]="getTooltip(item)"
+      matTooltipPosition="right"
     >
-      <mat-icon>{{ item.icon }}</mat-icon>
-      <span>{{ item.label }}</span>
-    </button>
+      <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+      <div class="nav-content" *ngIf="!isCollapsed">
+        <span class="nav-label">{{ item.label }}</span>
+        <span class="nav-description">{{ item.description }}</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Bottom Section -->
+  <div class="nav-footer">
+    <div class="user-section" [class.collapsed]="isCollapsed">
+      <mat-icon>account_circle</mat-icon>
+      <div class="user-info" *ngIf="!isCollapsed">
+        <span class="user-name">User</span>
+        <span class="user-role">Investor</span>
+      </div>
+    </div>
   </div>
 </nav>

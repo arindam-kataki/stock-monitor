@@ -1,6 +1,7 @@
+<!-- src/app/app.html -->
 <div class="app-container">
-  <app-navigation></app-navigation>
-  <main class="app-content">
+  <app-navigation (sidebarToggled)="onSidebarToggled($event)"></app-navigation>
+  <main class="app-content" [class.sidebar-collapsed]="isSidebarCollapsed">
     <router-outlet></router-outlet>
   </main>
 </div>
