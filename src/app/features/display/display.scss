@@ -1,0 +1,475 @@
+// src/app/features/display/display.scss
+
+.display-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: calc(100vh - 64px);
+}
+
+// Page header
+.page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .header-content {
+    h2 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 32px;
+      font-weight: 600;
+
+      mat-icon {
+        font-size: 36px;
+        width: 36px;
+        height: 36px;
+      }
+    }
+
+    .subtitle {
+      margin: 8px 0 0 48px;
+      opacity: 0.95;
+      font-size: 16px;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+
+    button {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      mat-icon {
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+// Loading state
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  background: white;
+  border-radius: 12px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  p {
+    margin-top: 16px;
+    color: #666;
+    font-size: 16px;
+  }
+}
+
+// Settings grid
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+// Settings card
+.settings-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+
+  mat-card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+
+    mat-card-title {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #333;
+      font-size: 20px;
+      font-weight: 600;
+
+      mat-icon {
+        color: #667eea;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+  }
+
+  mat-card-content {
+    padding: 0;
+  }
+}
+
+// Settings list
+.settings-list {
+  display: flex;
+  flex-direction: column;
+}
+
+// Individual setting item
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover:not(.disabled) {
+    background: #f8f9fa;
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .setting-info {
+    flex: 1;
+    max-width: 60%;
+
+    .setting-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+
+      mat-icon {
+        color: #667eea;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      span {
+        color: #333;
+        font-weight: 600;
+        font-size: 15px;
+      }
+    }
+
+    .setting-description {
+      margin: 0 0 0 32px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .performance-hint {
+      display: inline-block;
+      margin: 8px 0 0 32px;
+      padding: 4px 8px;
+      background: #fff3cd;
+      color: #856404;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+  }
+
+  // Slider container
+  .slider-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 200px;
+
+    .slider-value {
+      min-width: 40px;
+      text-align: center;
+      font-weight: 600;
+      color: #667eea;
+      font-size: 14px;
+    }
+
+    .cycle-slider {
+      flex: 1;
+      min-width: 150px;
+
+      ::ng-deep {
+        .mdc-slider__track--active_fill {
+          background-color: #667eea;
+        }
+
+        .mdc-slider__thumb-knob {
+          background-color: #667eea;
+        }
+
+        .mdc-slider__track--inactive {
+          background-color: #e0e0e0;
+        }
+      }
+    }
+  }
+
+  // Notification controls
+  .notification-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .test-button {
+      height: 32px;
+      padding: 0 12px;
+
+      mat-icon {
+        margin-right: 4px;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  // Toggle groups
+  .time-range-toggle,
+  .chart-type-toggle,
+  .refresh-rate-toggle {
+    ::ng-deep {
+      .mat-button-toggle-group {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+      }
+
+      .mat-button-toggle-button {
+        padding: 0 12px;
+        height: 36px;
+        font-size: 13px;
+      }
+
+      .mat-button-toggle-checked {
+        background-color: #667eea;
+        color: white;
+
+        .mat-button-toggle-button {
+          color: white;
+        }
+      }
+    }
+  }
+
+  // Toggle switches
+  mat-slide-toggle {
+    ::ng-deep {
+      .mdc-switch--selected .mdc-switch__track {
+        background-color: #667eea;
+      }
+
+      .mdc-switch--selected .mdc-switch__handle-track {
+        .mdc-switch__icons {
+          opacity: 1;
+        }
+      }
+    }
+  }
+}
+
+// Action buttons
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  button {
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+
+  .save-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #667eea;
+    font-weight: 500;
+
+    mat-spinner {
+      ::ng-deep circle {
+        stroke: #667eea;
+      }
+    }
+  }
+}
+
+// Material overrides
+::ng-deep {
+  .mat-mdc-card {
+    box-shadow: none !important;
+  }
+
+  .mat-mdc-progress-spinner {
+    circle {
+      stroke: #667eea;
+    }
+  }
+
+  .mat-mdc-button {
+    letter-spacing: 0.5px;
+  }
+}
+
+// Responsive design
+@media (max-width: 1024px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .display-container {
+    padding: 12px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+
+    .header-content {
+      text-align: center;
+
+      h2 {
+        font-size: 24px;
+
+        mat-icon {
+          font-size: 28px;
+          width: 28px;
+          height: 28px;
+        }
+      }
+
+      .subtitle {
+        margin-left: 0;
+        font-size: 14px;
+      }
+    }
+
+    .header-actions {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+
+    .setting-info {
+      max-width: 100%;
+
+      .setting-description {
+        margin-left: 0;
+      }
+
+      .performance-hint {
+        margin-left: 0;
+      }
+    }
+
+    .slider-container {
+      width: 100%;
+    }
+
+    .time-range-toggle,
+    .chart-type-toggle,
+    .refresh-rate-toggle {
+      width: 100%;
+
+      ::ng-deep .mat-button-toggle-group {
+        width: 100%;
+        display: flex;
+
+        .mat-button-toggle {
+          flex: 1;
+        }
+      }
+    }
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 16px;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+// Dark mode support (optional)
+@media (prefers-color-scheme: dark) {
+  .display-container {
+    .settings-card {
+      background: #1e1e1e;
+
+      mat-card-header {
+        background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%);
+        border-bottom-color: #333;
+
+        mat-card-title {
+          color: #f0f0f0;
+        }
+      }
+
+      .setting-item {
+        border-bottom-color: #333;
+
+        &:hover:not(.disabled) {
+          background: #2a2a2a;
+        }
+
+        .setting-label span {
+          color: #f0f0f0;
+        }
+
+        .setting-description {
+          color: #aaa;
+        }
+      }
+    }
+
+    .action-buttons {
+      background: #1e1e1e;
+    }
+  }
+}

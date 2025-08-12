@@ -14,9 +14,10 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class NavigationComponent {
   navItems = [
-    { path: '/configuration', label: 'Configuration', icon: 'settings' },
+    { path: '/watches', label: 'Watches', icon: 'loupe' },
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { path: '/analytics', label: 'Analytics', icon: 'analytics' },
+    { path: '/display', label: 'Display', icon: 'settings' },
   ];
 
   constructor(private router: Router) {}

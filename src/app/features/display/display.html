@@ -1,0 +1,369 @@
+<!-- src/app/features/display/display.html -->
+
+<div class="display-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h2>
+        <mat-icon>tune</mat-icon>
+        Display Settings
+      </h2>
+      <p class="subtitle">
+        Configure how your stock watches are displayed and cycled
+      </p>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button
+        mat-stroked-button
+        (click)="exportSettings()"
+        matTooltip="Export display settings"
+      >
+        <mat-icon>download</mat-icon>
+        Export
+      </button>
+
+      <button
+        mat-stroked-button
+        onclick="document.getElementById('importSettingsFile').click()"
+        matTooltip="Import display settings"
+      >
+        <mat-icon>upload</mat-icon>
+        Import
+      </button>
+      <input
+        type="file"
+        id="importSettingsFile"
+        style="display: none"
+        accept=".json"
+        (change)="importSettings($event)"
+      />
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Loading settings...</p>
+  </div>
+
+  <!-- Main Settings Grid -->
+  <div class="settings-grid" *ngIf="!loading">
+    <!-- Dashboard Display Settings -->
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>dashboard</mat-icon>
+          Dashboard Display
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="settings-list">
+          <!-- Auto-cycle Setting -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>loop</mat-icon>
+                <span>Auto-cycle Watches</span>
+              </div>
+              <p class="setting-description">
+                Automatically rotate through active watches in the dashboard
+              </p>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="settings.autoCycle"
+              (change)="onSettingChange()"
+              [disabled]="saving"
+            ></mat-slide-toggle>
+          </div>
+
+          <!-- Cycle Interval -->
+          <div class="setting-item" [class.disabled]="!settings.autoCycle">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>timer</mat-icon>
+                <span>Cycle Speed</span>
+              </div>
+              <p class="setting-description">
+                {{ getCycleIntervalDisplay() }} between watch changes
+              </p>
+              <span class="performance-hint">{{
+                getPerformanceRecommendation()
+              }}</span>
+            </div>
+            <div class="slider-container">
+              <span class="slider-value">{{ settings.cycleInterval }}s</span>
+              <mat-slider
+                min="5"
+                max="60"
+                step="5"
+                class="cycle-slider"
+                [disabled]="!settings.autoCycle || saving"
+              >
+                <input
+                  matSliderThumb
+                  [(ngModel)]="settings.cycleInterval"
+                  (ngModelChange)="onSettingChange()"
+                />
+              </mat-slider>
+            </div>
+          </div>
+
+          <!-- Show Volume -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>bar_chart</mat-icon>
+                <span>Show Volume Data</span>
+              </div>
+              <p class="setting-description">
+                Display trading volume information in charts
+              </p>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="settings.showVolume"
+              (change)="onSettingChange()"
+              [disabled]="saving"
+            ></mat-slide-toggle>
+          </div>
+
+          <!-- Enable Notifications -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>notifications</mat-icon>
+                <span>Enable Notifications</span>
+              </div>
+              <p class="setting-description">
+                Receive alerts for significant price changes
+              </p>
+            </div>
+            <div class="notification-controls">
+              <mat-slide-toggle
+                [(ngModel)]="settings.enableNotifications"
+                (change)="onSettingChange()"
+                [disabled]="saving"
+              ></mat-slide-toggle>
+              <button
+                mat-stroked-button
+                (click)="testNotifications()"
+                *ngIf="settings.enableNotifications"
+                class="test-button"
+              >
+                <mat-icon>notifications_active</mat-icon>
+                Test
+              </button>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Chart Preferences -->
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>show_chart</mat-icon>
+          Chart Preferences
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="settings-list">
+          <!-- Default Time Range -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>date_range</mat-icon>
+                <span>Default Time Range</span>
+              </div>
+              <p class="setting-description">
+                Initial time range when viewing charts
+              </p>
+            </div>
+            <mat-button-toggle-group
+              [(ngModel)]="displaySettings.defaultTimeRange"
+              (change)="
+                onDisplaySettingChange('defaultTimeRange', $event.value)
+              "
+              class="time-range-toggle"
+            >
+              <mat-button-toggle
+                *ngFor="let range of timeRangeOptions"
+                [value]="range"
+              >
+                {{ range }}
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+
+          <!-- Chart Type -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>analytics</mat-icon>
+                <span>Default Chart Type</span>
+              </div>
+              <p class="setting-description">
+                Preferred chart visualization style
+              </p>
+            </div>
+            <mat-button-toggle-group
+              [(ngModel)]="displaySettings.defaultChartType"
+              (change)="
+                onDisplaySettingChange('defaultChartType', $event.value)
+              "
+              class="chart-type-toggle"
+            >
+              <mat-button-toggle value="line">Line</mat-button-toggle>
+              <mat-button-toggle value="candlestick"
+                >Candlestick</mat-button-toggle
+              >
+              <mat-button-toggle value="area">Area</mat-button-toggle>
+              <mat-button-toggle value="bar">Bar</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+
+          <!-- Show Grid Lines -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>grid_on</mat-icon>
+                <span>Show Grid Lines</span>
+              </div>
+              <p class="setting-description">
+                Display grid lines on charts for better readability
+              </p>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="displaySettings.showGridLines"
+              (change)="
+                onDisplaySettingChange(
+                  'showGridLines',
+                  displaySettings.showGridLines
+                )
+              "
+            ></mat-slide-toggle>
+          </div>
+
+          <!-- Show Legend -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>legend_toggle</mat-icon>
+                <span>Show Legend</span>
+              </div>
+              <p class="setting-description">
+                Display chart legend with stock symbols
+              </p>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="displaySettings.showLegend"
+              (change)="
+                onDisplaySettingChange('showLegend', displaySettings.showLegend)
+              "
+            ></mat-slide-toggle>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Performance & Appearance -->
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>speed</mat-icon>
+          Performance & Appearance
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="settings-list">
+          <!-- Reduce Animations -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>animation</mat-icon>
+                <span>Reduce Animations</span>
+              </div>
+              <p class="setting-description">
+                Minimize animations for better performance
+              </p>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="displaySettings.reduceAnimations"
+              (change)="
+                onDisplaySettingChange(
+                  'reduceAnimations',
+                  displaySettings.reduceAnimations
+                )
+              "
+            ></mat-slide-toggle>
+          </div>
+
+          <!-- Data Refresh Rate -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>refresh</mat-icon>
+                <span>Data Refresh Rate</span>
+              </div>
+              <p class="setting-description">
+                How often to fetch updated stock data
+              </p>
+            </div>
+            <mat-button-toggle-group
+              [(ngModel)]="displaySettings.dataRefreshRate"
+              (change)="onDisplaySettingChange('dataRefreshRate', $event.value)"
+              class="refresh-rate-toggle"
+            >
+              <mat-button-toggle
+                *ngFor="let rate of refreshRateOptions"
+                [value]="rate.value"
+              >
+                {{ rate.label }}
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+
+          <!-- Compact Mode -->
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">
+                <mat-icon>view_compact</mat-icon>
+                <span>Compact Mode</span>
+              </div>
+              <p class="setting-description">
+                Use compact layout to show more information
+              </p>
+            </div>
+            <mat-slide-toggle
+              [(ngModel)]="displaySettings.compactMode"
+              (change)="
+                onDisplaySettingChange(
+                  'compactMode',
+                  displaySettings.compactMode
+                )
+              "
+            ></mat-slide-toggle>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons" *ngIf="!loading">
+    <button mat-stroked-button (click)="resetToDefaults()" [disabled]="saving">
+      <mat-icon>restart_alt</mat-icon>
+      Reset to Defaults
+    </button>
+
+    <div class="save-indicator" *ngIf="saving">
+      <mat-spinner diameter="20"></mat-spinner>
+      <span>Saving...</span>
+    </div>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 // src/app/core/services/settings.service.ts
-
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable, of, BehaviorSubject } from 'rxjs';
+import { delay } from 'rxjs/operators';
 
 export interface AppSettings {
   autoCycle: boolean;
@@ -14,81 +14,80 @@ export interface AppSettings {
   providedIn: 'root',
 })
 export class SettingsService {
-  private readonly STORAGE_KEY = 'stock-monitor-settings';
+  private readonly STORAGE_KEY = 'app-settings';
 
-  private defaultSettings: AppSettings = {
-    autoCycle: true,
-    cycleInterval: 15,
-    showVolume: true,
-    enableNotifications: false,
-  };
-
-  private settingsSubject: BehaviorSubject<AppSettings>;
-  public settings$: Observable<AppSettings>;
+  private settingsSubject = new BehaviorSubject<AppSettings>(
+    this.getDefaultSettings()
+  );
+  public settings$ = this.settingsSubject.asObservable();
 
   constructor() {
-    const savedSettings = this.loadFromStorage();
-    this.settingsSubject = new BehaviorSubject<AppSettings>(savedSettings);
-    this.settings$ = this.settingsSubject.asObservable();
+    this.loadSettingsFromStorage();
   }
 
-  // Get current settings as an Observable
-  getSettings(): Observable<AppSettings> {
-    return this.settings$;
+  private getDefaultSettings(): AppSettings {
+    return {
+      autoCycle: true,
+      cycleInterval: 15,
+      showVolume: true,
+      enableNotifications: false,
+    };
   }
 
-  // Get current settings value synchronously
-  getSettingsValue(): AppSettings {
-    return this.settingsSubject.value;
-  }
-
-  // Update settings
-  updateSettings(settings: Partial<AppSettings>): void {
-    const currentSettings = this.settingsSubject.value;
-    const updatedSettings = { ...currentSettings, ...settings };
-
-    this.settingsSubject.next(updatedSettings);
-    this.saveToStorage(updatedSettings);
-  }
-
-  // Update a single setting
-  updateSetting<K extends keyof AppSettings>(
-    key: K,
-    value: AppSettings[K]
-  ): void {
-    const currentSettings = this.settingsSubject.value;
-    const updatedSettings = { ...currentSettings, [key]: value };
-
-    this.settingsSubject.next(updatedSettings);
-    this.saveToStorage(updatedSettings);
-  }
-
-  // Reset to default settings
-  resetToDefaults(): void {
-    this.settingsSubject.next(this.defaultSettings);
-    this.saveToStorage(this.defaultSettings);
-  }
-
-  // Private methods for storage
-  private loadFromStorage(): AppSettings {
+  private loadSettingsFromStorage(): void {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        // Merge with defaults to ensure all properties exist
-        return { ...this.defaultSettings, ...parsed };
+        const settings = JSON.parse(stored);
+        this.settingsSubject.next(settings);
       }
     } catch (error) {
       console.error('Error loading settings from storage:', error);
     }
-    return this.defaultSettings;
   }
 
-  private saveToStorage(settings: AppSettings): void {
+  getSettings(): Observable<AppSettings> {
+    return of(this.settingsSubject.value).pipe(
+      delay(100) // Simulate API call
+    );
+  }
+
+  updateSettings(settings: Partial<AppSettings>): Observable<void> {
     try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(settings));
+      const currentSettings = this.settingsSubject.value;
+      const updatedSettings = { ...currentSettings, ...settings };
+
+      // Save to localStorage
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedSettings));
+
+      // Update BehaviorSubject
+      this.settingsSubject.next(updatedSettings);
+
+      // Return observable for consistency
+      return of(void 0).pipe(
+        delay(100) // Simulate API call
+      );
     } catch (error) {
-      console.error('Error saving settings to storage:', error);
+      console.error('Error updating settings:', error);
+      throw error;
     }
+  }
+
+  resetSettings(): Observable<void> {
+    const defaultSettings = this.getDefaultSettings();
+    return this.updateSettings(defaultSettings);
+  }
+
+  // Get specific setting value
+  getSetting<K extends keyof AppSettings>(key: K): AppSettings[K] {
+    return this.settingsSubject.value[key];
+  }
+
+  // Update specific setting
+  updateSetting<K extends keyof AppSettings>(
+    key: K,
+    value: AppSettings[K]
+  ): Observable<void> {
+    return this.updateSettings({ [key]: value });
   }
 }

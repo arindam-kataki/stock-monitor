@@ -22,7 +22,7 @@
     <div class="section-header">
       <!-- Title on its own line -->
       <h3 class="section-title">
-        <mat-icon>dashboard</mat-icon>
+        <mat-icon>visibility</mat-icon>
         Your Stock Watches
       </h3>
 
@@ -44,6 +44,32 @@
           <span class="separator">•</span>
           <span class="stat-value">{{ getTotalStockCount() }}</span>
           <span class="stat-label">stocks</span>
+        </div>
+
+        <div class="actions-right">
+          <button
+            mat-stroked-button
+            (click)="exportConfiguration()"
+            matTooltip="Export all watches configuration"
+          >
+            <mat-icon>download</mat-icon>
+            Export
+          </button>
+          <button
+            mat-stroked-button
+            onclick="document.getElementById('importFile').click()"
+            matTooltip="Import watches configuration"
+          >
+            <mat-icon>upload</mat-icon>
+            Import
+          </button>
+          <input
+            type="file"
+            id="importFile"
+            style="display: none"
+            accept=".json"
+            (change)="importConfiguration($event)"
+          />
         </div>
       </div>
     </div>
@@ -176,11 +202,11 @@
     <!-- Empty State -->
     <div *ngIf="ribbons.length === 0 && !loading" class="empty-state">
       <mat-icon class="empty-icon">dashboard_customize</mat-icon>
-      <h3>No ribbons configured yet</h3>
-      <p>Create your first ribbon to start monitoring stocks</p>
+      <h3>No watches configured yet</h3>
+      <p>Create your first watch to start monitoring stocks</p>
       <button mat-raised-button color="primary" (click)="openAddRibbonDialog()">
         <mat-icon>add</mat-icon>
-        Create Your First Ribbon
+        Create Your First Watch
       </button>
     </div>
   </div>
@@ -200,7 +226,7 @@
         <div class="setting-item">
           <div class="setting-label">
             <mat-icon>loop</mat-icon>
-            <span>Auto-cycle Ribbons</span>
+            <span>Auto-cycle Watches</span>
           </div>
           <mat-slide-toggle
             [(ngModel)]="settings.autoCycle"
@@ -245,32 +271,6 @@
             [(ngModel)]="settings.enableNotifications"
             (change)="onSettingChange()"
           ></mat-slide-toggle>
-        </div>
-      </div>
-
-      <!-- Export/Import Section -->
-      <div class="export-import-section">
-        <h4>Configuration Management</h4>
-        <div class="export-import-buttons">
-          <button mat-stroked-button (click)="exportConfiguration()">
-            <mat-icon>download</mat-icon>
-            Export Configuration
-          </button>
-
-          <button
-            mat-stroked-button
-            onclick="document.getElementById('importFile').click()"
-          >
-            <mat-icon>upload</mat-icon>
-            Import Configuration
-          </button>
-          <input
-            type="file"
-            id="importFile"
-            style="display: none"
-            accept=".json"
-            (change)="importConfiguration($event)"
-          />
         </div>
       </div>
     </mat-card-content>

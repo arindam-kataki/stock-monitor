@@ -672,3 +672,44 @@
     }
   }
 }
+
+// Update the actions-bar styling
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+
+  .actions-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .actions-right {
+    display: flex;
+    gap: 8px;
+
+    button {
+      mat-icon {
+        margin-right: 4px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}
+
+// Add separator styling
+.section-separator {
+  margin: 40px 0;
+  opacity: 0.3;
+}
+
+// Hide or remove the old export-import-section
+.export-import-section {
+  display: none;
+}
