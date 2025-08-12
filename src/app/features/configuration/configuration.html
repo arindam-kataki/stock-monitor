@@ -1,6 +1,62 @@
 <!-- src/app/features/configuration/configuration.html -->
 
 <div class="configuration-container">
+  <!-- Page Header (NEW - Add this entire section) -->
+  <!-- Page Header (UPDATE this entire section) -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h2>
+          <mat-icon>visibility</mat-icon>
+          Stock Watches
+        </h2>
+        <!-- Stats moved here -->
+        <div class="header-stats">
+          <span class="stat-value">{{ getActiveRibbonCount() }}</span>
+          <span class="stat-label">active</span>
+          <span class="separator">•</span>
+          <span class="stat-value">{{ getTotalStockCount() }}</span>
+          <span class="stat-label">stocks</span>
+        </div>
+      </div>
+      <p class="subtitle">Create and manage your custom stock watch lists</p>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <!-- Add Watch Button moved here -->
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="openAddRibbonDialog()"
+        class="add-watch-btn"
+      >
+        <mat-icon>add</mat-icon>
+        Add Watch
+      </button>
+
+      <div class="divider"></div>
+
+      <button
+        mat-stroked-button
+        (click)="exportConfiguration()"
+        matTooltip="Export all watches configuration"
+      >
+        <mat-icon>download</mat-icon>
+        Export
+      </button>
+
+      <button
+        mat-stroked-button
+        onclick="document.getElementById('importFile').click()"
+        matTooltip="Import watches configuration"
+      >
+        <mat-icon>upload</mat-icon>
+        Import
+      </button>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <mat-spinner></mat-spinner>

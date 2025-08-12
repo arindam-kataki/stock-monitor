@@ -714,7 +714,6 @@
   display: none;
 }
 
-
 // Add these styles to src/app/features/configuration/configuration.scss
 
 // Page header (matching display page style)
@@ -839,7 +838,7 @@
     .section-actions {
       display: flex;
       justify-content: flex-end;
-      
+
       .add-ribbon-btn {
         mat-icon {
           margin-right: 8px;
@@ -909,7 +908,7 @@
       background: #fff;
       padding: 10px 14px;
       border-radius: 6px;
-      font-family: 'Courier New', monospace;
+      font-family: "Courier New", monospace;
       font-size: 13px;
       margin-top: 8px;
       border: 1px solid #ffcdd2;
@@ -948,7 +947,7 @@
     .header-actions {
       width: 100%;
       justify-content: center;
-      
+
       button {
         flex: 1;
       }
@@ -984,10 +983,10 @@
 @media (prefers-color-scheme: dark) {
   .page-header {
     background: linear-gradient(135deg, #4a5aba 0%, #5a3b82 100%);
-    
+
     .header-actions button {
       background: rgba(255, 255, 255, 0.1);
-      
+
       &:hover {
         background: rgba(255, 255, 255, 0.2);
       }
@@ -996,7 +995,7 @@
 
   .ribbons-section {
     background: #1e1e1e;
-    
+
     .section-header {
       .section-title-bar {
         .section-title {
@@ -1005,7 +1004,7 @@
 
         .ribbon-stats {
           background: #2a2a2a;
-          
+
           .stat-label {
             color: #aaa;
           }
