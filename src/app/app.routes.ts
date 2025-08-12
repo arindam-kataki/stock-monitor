@@ -29,7 +29,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'analytics',
+    path: 'display',
     loadComponent: () =>
       import('./features/display/display').then((m) => m.DisplayComponent),
   },
