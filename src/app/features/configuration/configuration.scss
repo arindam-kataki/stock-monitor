@@ -412,16 +412,18 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      color: #666;
-      font-size: 14px;
       padding: 6px 12px;
       background: #f5f5f5;
-      border-radius: 20px;
+      border-radius: 16px;
+      font-size: 13px;
+      color: #666;
+      font-weight: 500;
 
       mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: #667eea;
       }
     }
 
