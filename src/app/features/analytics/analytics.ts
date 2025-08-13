@@ -105,7 +105,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   chartLabels: string[] = [];
 
   // Time Range
-  timeRanges: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', '1Y'];
+  timeRanges: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y'];
   selectedTimeRange: TimeRange = '1M';
 
   // Comparison Settings
@@ -411,6 +411,19 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       case 'alphabetical':
         this.heatmapData.sort((a, b) => a.symbol.localeCompare(b.symbol));
         break;
+    }
+  }
+
+  getSortLabel(): string {
+    switch (this.heatmapSortBy) {
+      case 'change':
+        return 'Performance';
+      case 'volume':
+        return 'Volume';
+      case 'alphabetical':
+        return 'Alphabetical';
+      default:
+        return 'Performance';
     }
   }
 

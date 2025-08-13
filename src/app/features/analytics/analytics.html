@@ -25,28 +25,6 @@
     </div>
   </div>
 
-  <!-- View Mode Selector -->
-  <mat-card class="view-selector-card">
-    <mat-button-toggle-group
-      [(ngModel)]="viewMode"
-      (change)="onViewModeChange(viewMode)"
-      class="view-mode-toggle"
-    >
-      <mat-button-toggle value="comparison">
-        <mat-icon>show_chart</mat-icon>
-        Comparison
-      </mat-button-toggle>
-      <mat-button-toggle value="heatmap">
-        <mat-icon>grid_on</mat-icon>
-        Heatmap
-      </mat-button-toggle>
-      <mat-button-toggle value="correlation">
-        <mat-icon>scatter_plot</mat-icon>
-        Correlation
-      </mat-button-toggle>
-    </mat-button-toggle-group>
-  </mat-card>
-
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <mat-spinner></mat-spinner>
@@ -63,57 +41,89 @@
 
   <!-- Main Content -->
   <div *ngIf="!loading && !error" class="analytics-content">
-    <!-- Comparison View -->
-    <div *ngIf="viewMode === 'comparison'" class="comparison-view">
-      <!-- Controls -->
-      <mat-card class="controls-card">
-        <div class="controls-row">
-          <!-- Ribbon Selection -->
-          <div class="control-group">
-            <label>Select Watches:</label>
-            <mat-select
-              [(ngModel)]="selectedRibbons"
-              (selectionChange)="onRibbonSelectionChange()"
-              multiple
-              placeholder="Choose watches to compare"
-            >
-              <mat-option *ngFor="let ribbon of ribbons" [value]="ribbon">
-                <mat-icon>{{ ribbon.icon }}</mat-icon>
-                {{ ribbon.name }} ({{ ribbon.selectedStocks.length }} stocks)
-              </mat-option>
-            </mat-select>
-          </div>
-
-          <!-- Time Range -->
-          <div class="control-group">
-            <label>Time Range:</label>
-            <mat-button-toggle-group
-              [(ngModel)]="selectedTimeRange"
-              (change)="onTimeRangeChange(selectedTimeRange)"
-            >
-              <mat-button-toggle
-                *ngFor="let range of timeRanges"
-                [value]="range"
-              >
-                {{ range }}
-              </mat-button-toggle>
-            </mat-button-toggle-group>
-          </div>
-
-          <!-- Benchmark Toggle -->
-          <div class="control-group">
-            <mat-slide-toggle
-              [(ngModel)]="showBenchmark"
-              (change)="toggleBenchmark()"
-              color="primary"
-            >
-              Show S&P 500 Benchmark
-            </mat-slide-toggle>
-          </div>
+    <!-- Universal Controls Bar -->
+    <mat-card class="controls-card">
+      <div class="controls-row">
+        <!-- Ribbon Selection -->
+        <div class="control-group flex-3">
+          <label>Select Watches:</label>
+          <mat-select
+            [(ngModel)]="selectedRibbons"
+            (selectionChange)="onRibbonSelectionChange()"
+            multiple
+            placeholder="Choose watches to compare"
+          >
+            <mat-option *ngFor="let ribbon of ribbons" [value]="ribbon">
+              <mat-icon>{{ ribbon.icon }}</mat-icon>
+              {{ ribbon.name }} ({{ ribbon.selectedStocks.length }} stocks)
+            </mat-option>
+          </mat-select>
         </div>
 
-        <!-- Selected Stocks Chips -->
-        <div class="selected-stocks" *ngIf="selectedStocks.length > 0">
+        <!-- Time Range -->
+        <div class="control-group flex-2">
+          <label>Time Range:</label>
+          <mat-button-toggle-group
+            [(ngModel)]="selectedTimeRange"
+            (change)="onTimeRangeChange(selectedTimeRange)"
+          >
+            <mat-button-toggle *ngFor="let range of timeRanges" [value]="range">
+              {{ range }}
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        <!-- View Selector Dropdown -->
+        <div class="control-group">
+          <label>View:</label>
+          <mat-select
+            [(ngModel)]="viewMode"
+            (selectionChange)="onViewModeChange(viewMode)"
+            class="view-selector"
+          >
+            <mat-option value="comparison">
+              <mat-icon>show_chart</mat-icon>
+              <span>Comparison</span>
+            </mat-option>
+            <mat-option value="heatmap">
+              <mat-icon>grid_on</mat-icon>
+              <span>Heatmap</span>
+            </mat-option>
+            <mat-option value="correlation">
+              <mat-icon>scatter_plot</mat-icon>
+              <span>Correlation</span>
+            </mat-option>
+          </mat-select>
+        </div>
+
+        <!-- Sort By Dropdown (disabled when not in heatmap view) -->
+        <div class="control-group">
+          <label>Sort By:</label>
+          <mat-select
+            [(ngModel)]="heatmapSortBy"
+            (selectionChange)="sortHeatmap()"
+            [disabled]="viewMode !== 'heatmap'"
+            class="sort-selector"
+          >
+            <mat-option value="change">
+              <mat-icon>trending_up</mat-icon>
+              <span>Performance</span>
+            </mat-option>
+            <mat-option value="volume">
+              <mat-icon>bar_chart</mat-icon>
+              <span>Volume</span>
+            </mat-option>
+            <mat-option value="alphabetical">
+              <mat-icon>sort_by_alpha</mat-icon>
+              <span>Alphabetical</span>
+            </mat-option>
+          </mat-select>
+        </div>
+      </div>
+
+      <!-- Selected Stocks Chips with S&P Toggle -->
+      <div class="selected-stocks-row" *ngIf="selectedStocks.length > 0">
+        <div class="stocks-info">
           <label>Comparing {{ selectedStocks.length }} stocks:</label>
           <mat-chip-set class="stock-chips">
             <mat-chip *ngFor="let stock of selectedStocks">
@@ -121,13 +131,29 @@
             </mat-chip>
           </mat-chip-set>
         </div>
-      </mat-card>
 
-      <!-- Metrics Cards -->
+        <!-- S&P 500 Benchmark Toggle (moved here, only show for comparison view) -->
+        <div class="benchmark-toggle" *ngIf="viewMode === 'comparison'">
+          <mat-slide-toggle
+            [(ngModel)]="showBenchmark"
+            (change)="toggleBenchmark()"
+            color="primary"
+          >
+            <mat-icon>insights</mat-icon>
+            Add S&P 500 Benchmark
+          </mat-slide-toggle>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Comparison View -->
+    <div *ngIf="viewMode === 'comparison'" class="comparison-view">
+      <!-- Metrics Row -->
+      <!-- Update the Metrics Row in analytics.html -->
       <div class="metrics-row">
         <mat-card class="metric-card">
           <mat-card-content>
-            <div class="metric-label">Average Change</div>
+            <div class="metric-label">Avg</div>
             <div
               class="metric-value"
               [class.positive]="averageChange > 0"
@@ -140,20 +166,26 @@
 
         <mat-card class="metric-card" *ngIf="topPerformer">
           <mat-card-content>
-            <div class="metric-label">Top Performer</div>
-            <div class="metric-stock">{{ topPerformer.symbol }}</div>
-            <div class="metric-value positive">
-              {{ formatChange(topPerformerChange) }}
+            <div class="metric-label">Top</div>
+            <div class="metric-inline">
+              <span class="metric-stock">{{ topPerformer.symbol }}</span>
+              <span class="metric-value positive">{{
+                formatChange(topPerformerChange)
+              }}</span>
             </div>
           </mat-card-content>
         </mat-card>
 
         <mat-card class="metric-card" *ngIf="bottomPerformer">
           <mat-card-content>
-            <div class="metric-label">Bottom Performer</div>
-            <div class="metric-stock">{{ bottomPerformer.symbol }}</div>
-            <div class="metric-value negative">
-              {{ formatChange(bottomPerformerChange) }}
+            <div class="metric-label">Bottom</div>
+            <div class="metric-inline">
+              <span class="metric-stock"
+                >{{ bottomPerformer.symbol }}</span
+              >
+              <span class="metric-value negative">{{
+                formatChange(bottomPerformerChange)
+              }}</span>
             </div>
           </mat-card-content>
         </mat-card>
@@ -163,9 +195,12 @@
       <mat-card class="chart-card">
         <mat-card-header>
           <mat-card-title>Normalized Performance Comparison</mat-card-title>
-          <mat-card-subtitle
-            >All stocks indexed to 0% at start date</mat-card-subtitle
-          >
+          <mat-card-subtitle>
+            All stocks indexed to 0% at start date
+            <span *ngIf="showBenchmark" class="benchmark-indicator"
+              >• S&P 500 benchmark included</span
+            >
+          </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container">
@@ -177,50 +212,17 @@
 
     <!-- Heatmap View -->
     <div *ngIf="viewMode === 'heatmap'" class="heatmap-view">
-      <!-- Heatmap Controls -->
-      <mat-card class="controls-card">
-        <div class="controls-row">
-          <div class="control-group">
-            <label>Sort By:</label>
-            <mat-button-toggle-group
-              [(ngModel)]="heatmapSortBy"
-              (change)="sortHeatmap()"
-            >
-              <mat-button-toggle value="change">Performance</mat-button-toggle>
-              <mat-button-toggle value="volume">Volume</mat-button-toggle>
-              <mat-button-toggle value="alphabetical"
-                >Alphabetical</mat-button-toggle
-              >
-            </mat-button-toggle-group>
-          </div>
-
-          <div class="control-group">
-            <label>Time Range:</label>
-            <mat-button-toggle-group
-              [(ngModel)]="selectedTimeRange"
-              (change)="onTimeRangeChange(selectedTimeRange)"
-            >
-              <mat-button-toggle
-                *ngFor="let range of timeRanges"
-                [value]="range"
-              >
-                {{ range }}
-              </mat-button-toggle>
-            </mat-button-toggle-group>
-          </div>
-        </div>
-      </mat-card>
-
       <!-- Heatmap Grid -->
       <mat-card class="heatmap-card">
         <mat-card-header>
           <mat-card-title>Performance Heatmap</mat-card-title>
-          <mat-card-subtitle
-            >{{ selectedTimeRange }} performance across all selected
-            stocks</mat-card-subtitle
-          >
+          <mat-card-subtitle>
+            {{ selectedTimeRange }} performance across all selected stocks
+            <span class="sort-indicator">• Sorted by {{ getSortLabel() }}</span>
+          </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
+          <!-- Heatmap Legend -->
           <div class="heatmap-legend">
             <span class="legend-item">
               <span class="legend-color strong-positive"></span>
@@ -248,12 +250,14 @@
             </span>
           </div>
 
-          <div class="heatmap-grid">
+          <!-- Heatmap Grid -->
+          <div class="heatmap-grid" *ngIf="heatmapData.length > 0">
             <div
               *ngFor="let cell of heatmapData"
               class="heatmap-cell"
               [ngClass]="getHeatmapColor(cell.change)"
-              [matTooltip]="cell.name"
+              [matTooltip]="cell.name + ' - ' + formatChange(cell.change)"
+              matTooltipPosition="above"
             >
               <div class="cell-symbol">{{ cell.symbol }}</div>
               <div class="cell-change">{{ formatChange(cell.change) }}</div>
@@ -263,6 +267,7 @@
             </div>
           </div>
 
+          <!-- No Data Message -->
           <div *ngIf="heatmapData.length === 0" class="no-data">
             <mat-icon>info</mat-icon>
             <p>Select watches to view heatmap</p>
@@ -271,7 +276,7 @@
       </mat-card>
     </div>
 
-    <!-- Correlation View (Placeholder) -->
+    <!-- Correlation View -->
     <div *ngIf="viewMode === 'correlation'" class="correlation-view">
       <mat-card class="correlation-card">
         <mat-card-header>
@@ -288,8 +293,27 @@
               Correlation analysis will show relationships between stock
               movements
             </p>
+            <p class="feature-description">
+              This view will display a correlation matrix showing how closely
+              your stocks move together, helping you identify portfolio
+              diversification opportunities.
+            </p>
           </div>
         </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- No Stocks Selected Message -->
+    <div
+      *ngIf="selectedStocks.length === 0 && selectedRibbons.length === 0"
+      class="no-selection"
+    >
+      <mat-card class="empty-state-card">
+        <mat-icon class="empty-icon">insert_chart</mat-icon>
+        <h2>No Watches Selected</h2>
+        <p>
+          Select one or more watches from the dropdown above to begin analysis
+        </p>
       </mat-card>
     </div>
   </div>
