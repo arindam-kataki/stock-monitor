@@ -1,0 +1,479 @@
+// src/app/features/analytics/analytics.scss
+
+.analytics-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 64px);
+}
+
+// Page Header
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .header-content {
+    h1 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #333;
+      font-size: 28px;
+      font-weight: 600;
+
+      mat-icon {
+        color: #667eea;
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    .subtitle {
+      margin: 8px 0 0 44px;
+      color: #666;
+      font-size: 14px;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
+}
+
+// View Selector
+.view-selector-card {
+  margin-bottom: 24px;
+  padding: 12px;
+
+  .view-mode-toggle {
+    width: 100%;
+
+    mat-button-toggle {
+      flex: 1;
+
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+// Loading & Error States
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+
+  p {
+    margin-top: 16px;
+    color: #666;
+  }
+}
+
+.error-card {
+  max-width: 500px;
+  text-align: center;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #f44336;
+    margin-bottom: 16px;
+  }
+}
+
+// Analytics Content
+.analytics-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+// Comparison View
+.comparison-view {
+  .controls-card {
+    margin-bottom: 24px;
+    padding: 20px;
+
+    .controls-row {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+        min-width: 200px;
+
+        label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        mat-select {
+          width: 100%;
+        }
+
+        mat-button-toggle-group {
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+
+    .selected-stocks {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+
+      label {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .stock-chips {
+        mat-chip {
+          background: #f0f4ff;
+          color: #667eea;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  // Metrics Row
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .metric-card {
+      text-align: center;
+
+      mat-card-content {
+        padding: 20px;
+      }
+
+      .metric-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+
+      .metric-value {
+        font-size: 28px;
+        font-weight: bold;
+
+        &.positive {
+          color: #28a745;
+        }
+
+        &.negative {
+          color: #dc3545;
+        }
+      }
+
+      .metric-stock {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 4px 0;
+      }
+    }
+  }
+
+  // Chart Card
+  .chart-card {
+    mat-card-header {
+      padding: 20px 20px 16px;
+
+      mat-card-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      mat-card-subtitle {
+        margin-top: 4px;
+        color: #666;
+      }
+    }
+
+    .chart-container {
+      height: 400px;
+      padding: 20px;
+      position: relative;
+
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+    }
+  }
+}
+
+// Heatmap View
+.heatmap-view {
+  .heatmap-card {
+    mat-card-header {
+      padding: 20px 20px 16px;
+    }
+
+    .heatmap-legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #666;
+
+        .legend-color {
+          width: 20px;
+          height: 20px;
+          border-radius: 4px;
+
+          &.strong-positive {
+            background: linear-gradient(135deg, #00c851, #00a844);
+          }
+
+          &.positive {
+            background: linear-gradient(135deg, #28a745, #20c997);
+          }
+
+          &.slight-positive {
+            background: linear-gradient(135deg, #6fc781, #5cb85c);
+          }
+
+          &.slight-negative {
+            background: linear-gradient(135deg, #ff8a65, #ff7043);
+          }
+
+          &.negative {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+          }
+
+          &.strong-negative {
+            background: linear-gradient(135deg, #d32f2f, #b71c1c);
+          }
+        }
+      }
+    }
+
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 20px;
+
+      .heatmap-cell {
+        padding: 16px;
+        border-radius: 8px;
+        text-align: center;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+        &:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell-symbol {
+          font-size: 18px;
+          font-weight: bold;
+        }
+
+        .cell-change {
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .cell-volume {
+          font-size: 11px;
+          opacity: 0.9;
+        }
+
+        &.strong-positive {
+          background: linear-gradient(135deg, #00c851, #00a844);
+        }
+
+        &.positive {
+          background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        &.slight-positive {
+          background: linear-gradient(135deg, #6fc781, #5cb85c);
+        }
+
+        &.slight-negative {
+          background: linear-gradient(135deg, #ff8a65, #ff7043);
+        }
+
+        &.negative {
+          background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        &.strong-negative {
+          background: linear-gradient(135deg, #d32f2f, #b71c1c);
+        }
+      }
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: #999;
+      }
+    }
+  }
+}
+
+// Correlation View
+.correlation-view {
+  .correlation-card {
+    min-height: 400px;
+
+    .coming-soon {
+      text-align: center;
+      padding: 80px 20px;
+      color: #666;
+
+      mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: #999;
+        margin-bottom: 20px;
+      }
+
+      h3 {
+        font-size: 24px;
+        margin: 16px 0;
+        color: #333;
+      }
+
+      p {
+        font-size: 14px;
+        color: #666;
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .analytics-container {
+    padding: 10px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+
+    .header-actions {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .comparison-view {
+    .controls-card {
+      .controls-row {
+        flex-direction: column;
+
+        .control-group {
+          width: 100%;
+        }
+      }
+    }
+
+    .metrics-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .heatmap-view {
+    .heatmap-legend {
+      font-size: 10px;
+
+      .legend-color {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .heatmap-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .view-selector-card {
+    .view-mode-toggle {
+      flex-direction: column;
+
+      mat-button-toggle {
+        width: 100%;
+      }
+    }
+  }
+}

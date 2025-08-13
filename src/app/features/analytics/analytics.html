@@ -1,4 +1,296 @@
+<!-- src/app/features/analytics/analytics.html -->
+
 <div class="analytics-container">
-  <h2>Analytics Page</h2>
-  <p>Analytics details will go here</p>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <mat-icon>analytics</mat-icon>
+        Stock Analytics
+      </h1>
+      <p class="subtitle">
+        Compare performance and analyze trends across your portfolio
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button mat-stroked-button (click)="addStock()">
+        <mat-icon>add</mat-icon>
+        Add Stock
+      </button>
+      <button mat-stroked-button (click)="exportData()">
+        <mat-icon>download</mat-icon>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- View Mode Selector -->
+  <mat-card class="view-selector-card">
+    <mat-button-toggle-group
+      [(ngModel)]="viewMode"
+      (change)="onViewModeChange(viewMode)"
+      class="view-mode-toggle"
+    >
+      <mat-button-toggle value="comparison">
+        <mat-icon>show_chart</mat-icon>
+        Comparison
+      </mat-button-toggle>
+      <mat-button-toggle value="heatmap">
+        <mat-icon>grid_on</mat-icon>
+        Heatmap
+      </mat-button-toggle>
+      <mat-button-toggle value="correlation">
+        <mat-icon>scatter_plot</mat-icon>
+        Correlation
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+  </mat-card>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Loading analytics data...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <mat-card class="error-card">
+      <mat-icon>error_outline</mat-icon>
+      <h3>{{ error }}</h3>
+    </mat-card>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && !error" class="analytics-content">
+    <!-- Comparison View -->
+    <div *ngIf="viewMode === 'comparison'" class="comparison-view">
+      <!-- Controls -->
+      <mat-card class="controls-card">
+        <div class="controls-row">
+          <!-- Ribbon Selection -->
+          <div class="control-group">
+            <label>Select Watches:</label>
+            <mat-select
+              [(ngModel)]="selectedRibbons"
+              (selectionChange)="onRibbonSelectionChange()"
+              multiple
+              placeholder="Choose watches to compare"
+            >
+              <mat-option *ngFor="let ribbon of ribbons" [value]="ribbon">
+                <mat-icon>{{ ribbon.icon }}</mat-icon>
+                {{ ribbon.name }} ({{ ribbon.selectedStocks.length }} stocks)
+              </mat-option>
+            </mat-select>
+          </div>
+
+          <!-- Time Range -->
+          <div class="control-group">
+            <label>Time Range:</label>
+            <mat-button-toggle-group
+              [(ngModel)]="selectedTimeRange"
+              (change)="onTimeRangeChange(selectedTimeRange)"
+            >
+              <mat-button-toggle
+                *ngFor="let range of timeRanges"
+                [value]="range"
+              >
+                {{ range }}
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+
+          <!-- Benchmark Toggle -->
+          <div class="control-group">
+            <mat-slide-toggle
+              [(ngModel)]="showBenchmark"
+              (change)="toggleBenchmark()"
+              color="primary"
+            >
+              Show S&P 500 Benchmark
+            </mat-slide-toggle>
+          </div>
+        </div>
+
+        <!-- Selected Stocks Chips -->
+        <div class="selected-stocks" *ngIf="selectedStocks.length > 0">
+          <label>Comparing {{ selectedStocks.length }} stocks:</label>
+          <mat-chip-set class="stock-chips">
+            <mat-chip *ngFor="let stock of selectedStocks">
+              {{ stock.symbol }}
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+      </mat-card>
+
+      <!-- Metrics Cards -->
+      <div class="metrics-row">
+        <mat-card class="metric-card">
+          <mat-card-content>
+            <div class="metric-label">Average Change</div>
+            <div
+              class="metric-value"
+              [class.positive]="averageChange > 0"
+              [class.negative]="averageChange < 0"
+            >
+              {{ formatChange(averageChange) }}
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="metric-card" *ngIf="topPerformer">
+          <mat-card-content>
+            <div class="metric-label">Top Performer</div>
+            <div class="metric-stock">{{ topPerformer.symbol }}</div>
+            <div class="metric-value positive">
+              {{ formatChange(topPerformerChange) }}
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="metric-card" *ngIf="bottomPerformer">
+          <mat-card-content>
+            <div class="metric-label">Bottom Performer</div>
+            <div class="metric-stock">{{ bottomPerformer.symbol }}</div>
+            <div class="metric-value negative">
+              {{ formatChange(bottomPerformerChange) }}
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Comparison Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Normalized Performance Comparison</mat-card-title>
+          <mat-card-subtitle
+            >All stocks indexed to 0% at start date</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas #comparisonChart></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Heatmap View -->
+    <div *ngIf="viewMode === 'heatmap'" class="heatmap-view">
+      <!-- Heatmap Controls -->
+      <mat-card class="controls-card">
+        <div class="controls-row">
+          <div class="control-group">
+            <label>Sort By:</label>
+            <mat-button-toggle-group
+              [(ngModel)]="heatmapSortBy"
+              (change)="sortHeatmap()"
+            >
+              <mat-button-toggle value="change">Performance</mat-button-toggle>
+              <mat-button-toggle value="volume">Volume</mat-button-toggle>
+              <mat-button-toggle value="alphabetical"
+                >Alphabetical</mat-button-toggle
+              >
+            </mat-button-toggle-group>
+          </div>
+
+          <div class="control-group">
+            <label>Time Range:</label>
+            <mat-button-toggle-group
+              [(ngModel)]="selectedTimeRange"
+              (change)="onTimeRangeChange(selectedTimeRange)"
+            >
+              <mat-button-toggle
+                *ngFor="let range of timeRanges"
+                [value]="range"
+              >
+                {{ range }}
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+        </div>
+      </mat-card>
+
+      <!-- Heatmap Grid -->
+      <mat-card class="heatmap-card">
+        <mat-card-header>
+          <mat-card-title>Performance Heatmap</mat-card-title>
+          <mat-card-subtitle
+            >{{ selectedTimeRange }} performance across all selected
+            stocks</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-content>
+          <div class="heatmap-legend">
+            <span class="legend-item">
+              <span class="legend-color strong-positive"></span>
+              > +5%
+            </span>
+            <span class="legend-item">
+              <span class="legend-color positive"></span>
+              +2% to +5%
+            </span>
+            <span class="legend-item">
+              <span class="legend-color slight-positive"></span>
+              0% to +2%
+            </span>
+            <span class="legend-item">
+              <span class="legend-color slight-negative"></span>
+              0% to -2%
+            </span>
+            <span class="legend-item">
+              <span class="legend-color negative"></span>
+              -2% to -5%
+            </span>
+            <span class="legend-item">
+              <span class="legend-color strong-negative"></span>
+              < -5%
+            </span>
+          </div>
+
+          <div class="heatmap-grid">
+            <div
+              *ngFor="let cell of heatmapData"
+              class="heatmap-cell"
+              [ngClass]="getHeatmapColor(cell.change)"
+              [matTooltip]="cell.name"
+            >
+              <div class="cell-symbol">{{ cell.symbol }}</div>
+              <div class="cell-change">{{ formatChange(cell.change) }}</div>
+              <div class="cell-volume">
+                Vol: {{ formatVolume(cell.volume) }}
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="heatmapData.length === 0" class="no-data">
+            <mat-icon>info</mat-icon>
+            <p>Select watches to view heatmap</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Correlation View (Placeholder) -->
+    <div *ngIf="viewMode === 'correlation'" class="correlation-view">
+      <mat-card class="correlation-card">
+        <mat-card-header>
+          <mat-card-title>Correlation Matrix</mat-card-title>
+          <mat-card-subtitle
+            >See how your stocks move together</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-content>
+          <div class="coming-soon">
+            <mat-icon>construction</mat-icon>
+            <h3>Coming Soon</h3>
+            <p>
+              Correlation analysis will show relationships between stock
+              movements
+            </p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
 </div>
