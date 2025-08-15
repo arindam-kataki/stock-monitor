@@ -747,10 +747,7 @@
   margin-left: 8px;
 }
 
-// Remove the separate sort-controls-card styles
-// .sort-controls-card { ... } // DELETE THIS
-// Update these styles in analytics.scss
-
+// Update the metrics-row styles
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -758,65 +755,64 @@
   margin-bottom: 24px;
 
   .metric-card {
-    text-align: center;
-
-    mat-card-content {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 80px; // Ensure consistent height
-    }
-
-    .metric-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #999;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .metric-value {
-      font-size: 24px;
-      font-weight: bold;
-      line-height: 1;
-
-      &.positive {
-        color: #28a745;
-      }
-
-      &.negative {
-        color: #dc3545;
-      }
-    }
-
-    // Fixed inline style with proper vertical alignment
-    .metric-inline {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      height: 28px; // Fixed height to ensure vertical centering
-
-      .metric-stock {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        line-height: 1;
+    &.compact {
+      mat-card-content {
+        padding: 12px; // Reduced padding
         display: flex;
         align-items: center;
+        justify-content: center;
+        gap: 12px;
+        min-height: 0; // Remove min-height
+      }
+
+      .metric-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+
+        &.top {
+          color: #28a745;
+        }
+
+        &.bottom {
+          color: #dc3545;
+        }
+
+        // Default (average)
+        color: #6c757d;
       }
 
       .metric-value {
-        font-size: 24px;
+        font-size: 22px; // Slightly smaller
         font-weight: bold;
         line-height: 1;
+
+        &.positive {
+          color: #28a745;
+        }
+
+        &.negative {
+          color: #dc3545;
+        }
+      }
+
+      .metric-inline {
         display: flex;
         align-items: center;
+        gap: 10px;
+        line-height: 1;
+
+        .metric-stock {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+        }
+
+        .metric-value {
+          font-size: 18px;
+          font-weight: bold;
+        }
       }
     }
   }
 }
-
-

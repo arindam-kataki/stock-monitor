@@ -145,6 +145,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   bottomPerformer: Stock | null = null;
   averageChange = 0;
 
+  chartSize: 'small' | 'medium' | 'large' = 'medium';
+
+  @ViewChild('correlationChart')
+  correlationChartRef!: ElementRef<HTMLCanvasElement>;
+  private correlationChart?: Chart;
+  correlationMatrix: number[][] = [];
+  correlationLabels: string[] = [];
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -505,6 +513,48 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Add these methods
+  decreaseChartSize(): void {
+    if (this.chartSize === 'large') {
+      this.chartSize = 'medium';
+    } else if (this.chartSize === 'medium') {
+      this.chartSize = 'small';
+    }
+
+    // Resize the chart after a brief delay to allow CSS transition
+    setTimeout(() => {
+      if (this.comparisonChart) {
+        this.comparisonChart.resize();
+      }
+    }, 300);
+  }
+
+  increaseChartSize(): void {
+    if (this.chartSize === 'small') {
+      this.chartSize = 'medium';
+    } else if (this.chartSize === 'medium') {
+      this.chartSize = 'large';
+    }
+
+    // Resize the chart after a brief delay
+    setTimeout(() => {
+      if (this.comparisonChart) {
+        this.comparisonChart.resize();
+      }
+    }, 300);
+  }
+
+  resetChartSize(): void {
+    this.chartSize = 'medium';
+
+    // Resize the chart after a brief delay
+    setTimeout(() => {
+      if (this.comparisonChart) {
+        this.comparisonChart.resize();
+      }
+    }, 300);
+  }
+
   // ============== UTILITY METHODS ==============
 
   private generateMockChartData(symbol: string): ChartData {
@@ -610,5 +660,349 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     if (volume >= 1e6) return `${(volume / 1e6).toFixed(1)}M`;
     if (volume >= 1e3) return `${(volume / 1e3).toFixed(1)}K`;
     return volume.toString();
+  }
+
+  // ================= CORRELATION =========================
+
+  /**
+   * Calculate correlation matrix between all selected stocks
+   */
+  private calculateCorrelations(): void {
+    if (this.selectedStocks.length < 2) {
+      this.correlationMatrix = [];
+      this.correlationLabels = [];
+      return;
+    }
+
+    // Get price data for each stock
+    const priceArrays: number[][] = [];
+    this.correlationLabels = [];
+
+    for (const stock of this.selectedStocks) {
+      const data = this.stockChartData.get(stock.symbol);
+      if (data && data.data && data.data.length > 0) {
+        const prices = data.data.map((point) => point.close);
+        priceArrays.push(prices);
+        this.correlationLabels.push(stock.symbol);
+      }
+    }
+
+    // Calculate correlation matrix
+    const n = priceArrays.length;
+    this.correlationMatrix = Array(n)
+      .fill(null)
+      .map(() => Array(n).fill(0));
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          this.correlationMatrix[i][j] = 1; // Perfect correlation with itself
+        } else if (i < j) {
+          const correlation = this.calculatePearsonCorrelation(
+            priceArrays[i],
+            priceArrays[j]
+          );
+          this.correlationMatrix[i][j] = correlation;
+          this.correlationMatrix[j][i] = correlation; // Matrix is symmetric
+        }
+      }
+    }
+
+    // Update the chart if we're in correlation view
+    if (this.viewMode === 'correlation') {
+      setTimeout(() => this.updateCorrelationChart(), 100);
+    }
+  }
+
+  /**
+   * Calculate Pearson correlation coefficient between two arrays
+   */
+  private calculatePearsonCorrelation(x: number[], y: number[]): number {
+    const n = Math.min(x.length, y.length);
+    if (n === 0) return 0;
+
+    // Calculate means
+    const meanX = x.slice(0, n).reduce((a, b) => a + b, 0) / n;
+    const meanY = y.slice(0, n).reduce((a, b) => a + b, 0) / n;
+
+    // Calculate correlation
+    let numerator = 0;
+    let denominatorX = 0;
+    let denominatorY = 0;
+
+    for (let i = 0; i < n; i++) {
+      const dx = x[i] - meanX;
+      const dy = y[i] - meanY;
+      numerator += dx * dy;
+      denominatorX += dx * dx;
+      denominatorY += dy * dy;
+    }
+
+    const denominator = Math.sqrt(denominatorX * denominatorY);
+    if (denominator === 0) return 0;
+
+    return numerator / denominator;
+  }
+
+  /**
+   * Update the correlation matrix chart
+   */
+  private updateCorrelationChart(): void {
+    if (!this.correlationChartRef || this.correlationMatrix.length === 0)
+      return;
+
+    const ctx = this.correlationChartRef.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.correlationChart) {
+      this.correlationChart.destroy();
+    }
+
+    // Prepare data for the heatmap
+    const data: any[] = [];
+    const n = this.correlationMatrix.length;
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        data.push({
+          x: this.correlationLabels[j],
+          y: this.correlationLabels[i],
+          v: this.correlationMatrix[i][j],
+        });
+      }
+    }
+
+    // Create the chart
+    const config: ChartConfiguration = {
+      type: 'bubble',
+      data: {
+        datasets: [
+          {
+            label: 'Correlation',
+            data: data,
+            backgroundColor: (context: any) => {
+              // ADD TYPE HERE
+              const value = (context.raw as any).v;
+              return this.getCorrelationColor(value);
+            },
+            borderColor: 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 1,
+            radius: (context: any) => {
+              // ADD TYPE HERE
+              const size = Math.min(400 / n, 40);
+              return size;
+            },
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Stock Correlation Matrix',
+            font: { size: 16 },
+          },
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              title: () => '',
+              label: (context) => {
+                const raw = context.raw as any;
+                const correlation = (raw.v * 100).toFixed(1);
+                if (raw.x === raw.y) {
+                  return `${raw.x}: 100% (self)`;
+                }
+                return `${raw.x} vs ${raw.y}: ${correlation}%`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: 'category',
+            position: 'bottom',
+            labels: this.correlationLabels,
+            grid: {
+              display: true,
+              color: 'rgba(0, 0, 0, 0.05)',
+            },
+            ticks: {
+              font: {
+                size: 12,
+                weight: 'bold',
+              },
+            },
+          },
+          y: {
+            type: 'category',
+            position: 'left',
+            labels: this.correlationLabels,
+            grid: {
+              display: true,
+              color: 'rgba(0, 0, 0, 0.05)',
+            },
+            ticks: {
+              font: {
+                size: 12,
+                weight: 'bold',
+              },
+            },
+          },
+        },
+      },
+    };
+
+    this.correlationChart = new Chart(ctx, config);
+  }
+
+  /**
+   * Get color for correlation value
+   */
+  getCorrelationColor(value: number): string {
+    // Strong positive correlation (0.7 to 1.0) - Red
+    if (value >= 0.7) {
+      const intensity = (value - 0.7) / 0.3;
+      return `rgba(220, 53, 69, ${0.5 + intensity * 0.5})`;
+    }
+    // Moderate positive correlation (0.3 to 0.7) - Orange
+    else if (value >= 0.3) {
+      const intensity = (value - 0.3) / 0.4;
+      return `rgba(255, 193, 7, ${0.5 + intensity * 0.5})`;
+    }
+    // Weak correlation (-0.3 to 0.3) - Gray
+    else if (value >= -0.3) {
+      return 'rgba(108, 117, 125, 0.3)';
+    }
+    // Moderate negative correlation (-0.7 to -0.3) - Light Blue
+    else if (value >= -0.7) {
+      const intensity = Math.abs(value + 0.3) / 0.4;
+      return `rgba(23, 162, 184, ${0.5 + intensity * 0.5})`;
+    }
+    // Strong negative correlation (-1.0 to -0.7) - Blue
+    else {
+      const intensity = Math.abs(value + 0.7) / 0.3;
+      return `rgba(0, 123, 255, ${0.5 + intensity * 0.5})`;
+    }
+  }
+
+  /**
+   * Get correlation strength label
+   */
+  getCorrelationStrength(value: number): string {
+    const absValue = Math.abs(value);
+    if (absValue >= 0.7) return 'Strong';
+    if (absValue >= 0.3) return 'Moderate';
+    return 'Weak';
+  }
+
+  /**
+   * Format correlation value for display
+   */
+  formatCorrelation(value: number): string {
+    return (value * 100).toFixed(0) + '%';
+  }
+
+  // Add these helper methods to your AnalyticsComponent class:
+
+  /**
+   * Get the most correlated pair of stocks
+   */
+  getMostCorrelatedPair(): {
+    stock1: string;
+    stock2: string;
+    correlation: number;
+  } | null {
+    if (this.correlationMatrix.length < 2) return null;
+
+    let maxCorr = -1;
+    let pair = { stock1: '', stock2: '', correlation: 0 };
+
+    for (let i = 0; i < this.correlationMatrix.length; i++) {
+      for (let j = i + 1; j < this.correlationMatrix.length; j++) {
+        const corr = this.correlationMatrix[i][j];
+        if (corr > maxCorr && corr < 0.99) {
+          // Exclude self-correlation
+          maxCorr = corr;
+          pair = {
+            stock1: this.correlationLabels[i],
+            stock2: this.correlationLabels[j],
+            correlation: corr,
+          };
+        }
+      }
+    }
+
+    return pair.stock1 ? pair : null;
+  }
+
+  /**
+   * Get the least correlated (most diversified) pair of stocks
+   */
+  getLeastCorrelatedPair(): {
+    stock1: string;
+    stock2: string;
+    correlation: number;
+  } | null {
+    if (this.correlationMatrix.length < 2) return null;
+
+    let minCorr = 2;
+    let pair = { stock1: '', stock2: '', correlation: 0 };
+
+    for (let i = 0; i < this.correlationMatrix.length; i++) {
+      for (let j = i + 1; j < this.correlationMatrix.length; j++) {
+        const corr = Math.abs(this.correlationMatrix[i][j]);
+        if (corr < minCorr) {
+          minCorr = corr;
+          pair = {
+            stock1: this.correlationLabels[i],
+            stock2: this.correlationLabels[j],
+            correlation: this.correlationMatrix[i][j],
+          };
+        }
+      }
+    }
+
+    return pair.stock1 ? pair : null;
+  }
+
+  /**
+   * Calculate portfolio diversity score
+   */
+  getPortfolioDiversityScore(): string {
+    if (this.correlationMatrix.length < 2) return 'N/A';
+
+    let totalCorr = 0;
+    let count = 0;
+
+    for (let i = 0; i < this.correlationMatrix.length; i++) {
+      for (let j = i + 1; j < this.correlationMatrix.length; j++) {
+        totalCorr += Math.abs(this.correlationMatrix[i][j]);
+        count++;
+      }
+    }
+
+    if (count === 0) return 'N/A';
+
+    const avgCorr = totalCorr / count;
+    const diversityScore = (1 - avgCorr) * 100;
+    return diversityScore.toFixed(0) + '%';
+  }
+
+  /**
+   * Get diversity label based on score
+   */
+  getDiversityLabel(): string {
+    const scoreStr = this.getPortfolioDiversityScore();
+    if (scoreStr === 'N/A') return '';
+
+    const score = parseFloat(scoreStr);
+    if (score >= 70) return 'Excellent';
+    if (score >= 50) return 'Good';
+    if (score >= 30) return 'Moderate';
+    return 'Low';
   }
 }

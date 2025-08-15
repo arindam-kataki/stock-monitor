@@ -151,9 +151,11 @@
       <!-- Metrics Row -->
       <!-- Update the Metrics Row in analytics.html -->
       <div class="metrics-row">
-        <mat-card class="metric-card">
+        <mat-card class="metric-card compact">
           <mat-card-content>
-            <div class="metric-label">Avg</div>
+            <mat-icon class="metric-icon" matTooltip="Average Change"
+              >trending_flat</mat-icon
+            >
             <div
               class="metric-value"
               [class.positive]="averageChange > 0"
@@ -164,9 +166,11 @@
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="metric-card" *ngIf="topPerformer">
+        <mat-card class="metric-card compact" *ngIf="topPerformer">
           <mat-card-content>
-            <div class="metric-label">Top</div>
+            <mat-icon class="metric-icon top" matTooltip="Top Performer"
+              >trending_up</mat-icon
+            >
             <div class="metric-inline">
               <span class="metric-stock">{{ topPerformer.symbol }}</span>
               <span class="metric-value positive">{{
@@ -176,13 +180,13 @@
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="metric-card" *ngIf="bottomPerformer">
+        <mat-card class="metric-card compact" *ngIf="bottomPerformer">
           <mat-card-content>
-            <div class="metric-label">Bottom</div>
+            <mat-icon class="metric-icon bottom" matTooltip="Bottom Performer"
+              >trending_down</mat-icon
+            >
             <div class="metric-inline">
-              <span class="metric-stock"
-                >{{ bottomPerformer.symbol }}</span
-              >
+              <span class="metric-stock">{{ bottomPerformer.symbol }}</span>
               <span class="metric-value negative">{{
                 formatChange(bottomPerformerChange)
               }}</span>
@@ -194,16 +198,51 @@
       <!-- Comparison Chart -->
       <mat-card class="chart-card">
         <mat-card-header>
-          <mat-card-title>Normalized Performance Comparison</mat-card-title>
-          <mat-card-subtitle>
-            All stocks indexed to 0% at start date
-            <span *ngIf="showBenchmark" class="benchmark-indicator"
-              >• S&P 500 benchmark included</span
-            >
-          </mat-card-subtitle>
+          <div class="chart-header-content">
+            <div>
+              <mat-card-title>Normalized Performance Comparison</mat-card-title>
+              <mat-card-subtitle>
+                All stocks indexed to 0% at start date
+                <span *ngIf="showBenchmark" class="benchmark-indicator"
+                  >• S&P 500 benchmark included</span
+                >
+              </mat-card-subtitle>
+            </div>
+
+            <!-- Chart Resize Controls -->
+            <div class="chart-resize-controls">
+              <button
+                mat-icon-button
+                class="resize-btn"
+                (click)="decreaseChartSize()"
+                [disabled]="chartSize === 'small'"
+                matTooltip="Decrease height"
+              >
+                <mat-icon>remove</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                class="resize-btn"
+                (click)="resetChartSize()"
+                matTooltip="Reset to default"
+              >
+                <mat-icon>refresh</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                class="resize-btn"
+                (click)="increaseChartSize()"
+                [disabled]="chartSize === 'large'"
+                matTooltip="Increase height"
+              >
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          </div>
         </mat-card-header>
+
         <mat-card-content>
-          <div class="chart-container">
+          <div class="chart-container" [ngClass]="'chart-' + chartSize">
             <canvas #comparisonChart></canvas>
           </div>
         </mat-card-content>
@@ -277,27 +316,120 @@
     </div>
 
     <!-- Correlation View -->
+    <!-- Replace the Correlation View section in analytics.html with this: -->
+
+    <!-- Correlation View -->
     <div *ngIf="viewMode === 'correlation'" class="correlation-view">
       <mat-card class="correlation-card">
         <mat-card-header>
           <mat-card-title>Correlation Matrix</mat-card-title>
-          <mat-card-subtitle
-            >See how your stocks move together</mat-card-subtitle
-          >
+          <mat-card-subtitle>
+            Analyzing {{ correlationLabels.length }} stocks over
+            {{ selectedTimeRange }} period
+          </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <div class="coming-soon">
-            <mat-icon>construction</mat-icon>
-            <h3>Coming Soon</h3>
-            <p>
-              Correlation analysis will show relationships between stock
-              movements
-            </p>
-            <p class="feature-description">
-              This view will display a correlation matrix showing how closely
-              your stocks move together, helping you identify portfolio
-              diversification opportunities.
-            </p>
+          <!-- Correlation content when we have data -->
+          <div *ngIf="correlationMatrix.length >= 2">
+            <!-- Legend -->
+            <div class="correlation-legend">
+              <div class="legend-title">Correlation Strength:</div>
+              <div class="legend-items">
+                <span class="legend-item">
+                  <span class="legend-color strong-positive-corr"></span>
+                  Strong Positive (70% to 100%)
+                </span>
+                <span class="legend-item">
+                  <span class="legend-color moderate-positive-corr"></span>
+                  Moderate Positive (30% to 70%)
+                </span>
+                <span class="legend-item">
+                  <span class="legend-color weak-corr"></span>
+                  Weak (-30% to 30%)
+                </span>
+                <span class="legend-item">
+                  <span class="legend-color moderate-negative-corr"></span>
+                  Moderate Negative (-70% to -30%)
+                </span>
+                <span class="legend-item">
+                  <span class="legend-color strong-negative-corr"></span>
+                  Strong Negative (-100% to -70%)
+                </span>
+              </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container">
+              <canvas #correlationChart></canvas>
+            </div>
+
+            <!-- Correlation Insights -->
+            <div class="correlation-insights">
+              <h4>Key Insights:</h4>
+              <div class="insights-grid">
+                <div class="insight-card">
+                  <mat-icon>trending_up</mat-icon>
+                  <div class="insight-content">
+                    <div class="insight-label">Most Correlated Pair</div>
+                    <div
+                      class="insight-value"
+                      *ngIf="getMostCorrelatedPair() as pair"
+                    >
+                      {{ pair.stock1 }} & {{ pair.stock2 }}
+                      <span class="correlation-value positive">{{
+                        formatCorrelation(pair.correlation)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="insight-card">
+                  <mat-icon>trending_down</mat-icon>
+                  <div class="insight-content">
+                    <div class="insight-label">Most Diversified Pair</div>
+                    <div
+                      class="insight-value"
+                      *ngIf="getLeastCorrelatedPair() as pair"
+                    >
+                      {{ pair.stock1 }} & {{ pair.stock2 }}
+                      <span class="correlation-value negative">{{
+                        formatCorrelation(pair.correlation)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="insight-card">
+                  <mat-icon>analytics</mat-icon>
+                  <div class="insight-content">
+                    <div class="insight-label">Portfolio Diversity</div>
+                    <div class="insight-value">
+                      {{ getPortfolioDiversityScore() }}
+                      <span class="diversity-label">{{
+                        getDiversityLabel()
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Not enough stocks message -->
+          <div
+            *ngIf="correlationMatrix.length < 2 && selectedStocks.length > 0"
+            class="insufficient-data"
+          >
+            <mat-icon>info</mat-icon>
+            <h3>Insufficient Data</h3>
+            <p>Select at least 2 stocks to view correlation analysis</p>
+          </div>
+
+          <!-- No stocks selected -->
+          <div *ngIf="selectedStocks.length === 0" class="no-data">
+            <mat-icon>scatter_plot</mat-icon>
+            <h3>No Stocks Selected</h3>
+            <p>Select watches to analyze stock correlations</p>
           </div>
         </mat-card-content>
       </mat-card>
