@@ -248,12 +248,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       this.selectedStocks[0].symbol
     );
     if (firstStockData) {
-      this.chartLabels = firstStockData.data
-        .slice(0, minDataPoints)
-        .map((point) => {
-          const date = new Date(point.date || point.timestamp || '');
-          return this.formatDateLabel(date);
-        });
+      const dataSlice = firstStockData.data.slice(0, minDataPoints);
+      this.chartLabels = this.generateSmartLabels(this.selectedTimeRange);
     }
 
     // Create normalized dataset for each stock
@@ -593,23 +589,24 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private getDataPointsForRange(): number {
     switch (this.selectedTimeRange) {
       case '1D':
-        return 24;
+        return 32; // 16 hours × 2 (30-min intervals) for extended hours
+      // 4:00 AM - 8:00 PM ET
       case '5D':
-        return 5;
+        return 5; // 5 daily closing prices
       case '1M':
-        return 30;
+        return 22; // ~22 trading days in a month
       case '3M':
-        return 90;
+        return 65; // ~65 trading days in 3 months
       case '6M':
-        return 180;
+        return 130; // ~130 trading days in 6 months
       case '1Y':
-        return 365;
+        return 252; // ~252 trading days in a year
+      case '5Y':
+        return 1260; // ~252 trading days × 5
       default:
         return 30;
     }
   }
-
-  // Add these methods to src/app/features/analytics/analytics.ts
 
   getTopPerformerChange(): number {
     if (!this.topPerformer) return 0;
@@ -648,6 +645,183 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     return date.toLocaleDateString('en-US', options);
+  }
+
+  private generateSmartLabels(timeRange: TimeRange): string[] {
+    // Get the expected number of points for this time range
+    const expectedPoints = this.getDataPointsForRange();
+    const labels: string[] = new Array(expectedPoints).fill('');
+    const today = new Date(); // August 15, 2025
+
+    switch (timeRange) {
+      case '1D':
+        // Today's extended hours (4 AM - 8 PM ET)
+        for (let i = 0; i < 8; i++) {
+          const position = i * 4;
+          if (position < expectedPoints) {
+            const hour = 4 + i * 2;
+            if (hour < 9.5) {
+              labels[position] = `${hour}:00 AM PM`; // Pre-market
+            } else if (hour >= 16) {
+              labels[position] = `${hour - 12}:00 PM AH`; // After-hours
+            } else if (hour === 12) {
+              labels[position] = '12:00 PM';
+            } else if (hour > 12) {
+              labels[position] = `${hour - 12}:00 PM`;
+            } else {
+              labels[position] = `${hour}:00 AM`;
+            }
+          }
+        }
+        break;
+
+      case '5D':
+        // Last 5 trading days
+        const daysOfWeek = [];
+        for (let i = 4; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - i);
+          daysOfWeek.push(
+            date.toLocaleDateString('en-US', { weekday: 'short' })
+          );
+        }
+        for (let i = 0; i < 5 && i < expectedPoints; i++) {
+          labels[i] = daysOfWeek[i];
+        }
+        break;
+
+      case '1M':
+        // 1 month back from today (22 trading days)
+        for (let i = 0; i < 5; i++) {
+          const position = i * 5;
+          if (position < expectedPoints) {
+            const daysBack = 22 - position;
+            const labelDate = new Date(today);
+            labelDate.setDate(today.getDate() - daysBack);
+            labels[position] = `${
+              labelDate.getMonth() + 1
+            }/${labelDate.getDate()}`;
+          }
+        }
+        break;
+
+      case '3M':
+        // 3 months back from today (May 15 - Aug 15)
+        // Place labels where month boundaries actually occur
+        const threeMonthStart = new Date(today);
+        threeMonthStart.setMonth(today.getMonth() - 3); // May 15
+
+        // Calculate positions for month boundaries
+        // May 15 to Aug 15 is ~92 days
+        const threeMonthPositions = [
+          { month: 'Jun', position: Math.floor((17 / 92) * expectedPoints) }, // Jun 1 is ~17 days from May 15
+          { month: 'Jul', position: Math.floor((47 / 92) * expectedPoints) }, // Jul 1 is ~47 days from May 15
+          { month: 'Aug', position: Math.floor((78 / 92) * expectedPoints) }, // Aug 1 is ~78 days from May 15
+        ];
+
+        threeMonthPositions.forEach(({ month, position }) => {
+          if (position < expectedPoints) {
+            labels[position] = month;
+          }
+        });
+        break;
+
+      case '6M':
+        // 6 months back from today (Feb 15 - Aug 15)
+        // 130 points over ~180 days
+        // Place labels where month boundaries actually occur
+
+        const sixMonthStart = new Date(today);
+        sixMonthStart.setMonth(today.getMonth() - 6); // Feb 15, 2025
+
+        // Calculate where each month's 1st falls in our 130 data points
+        // Feb 15 to Aug 15 is approximately 180 days
+        const monthPositions = [
+          { month: 'Mar', position: Math.floor((14 / 180) * expectedPoints) }, // Mar 1 is ~14 days from Feb 15
+          { month: 'Apr', position: Math.floor((44 / 180) * expectedPoints) }, // Apr 1 is ~44 days from Feb 15
+          { month: 'May', position: Math.floor((74 / 180) * expectedPoints) }, // May 1 is ~74 days from Feb 15
+          { month: 'Jun', position: Math.floor((105 / 180) * expectedPoints) }, // Jun 1 is ~105 days from Feb 15
+          { month: 'Jul', position: Math.floor((135 / 180) * expectedPoints) }, // Jul 1 is ~135 days from Feb 15
+          { month: 'Aug', position: Math.floor((166 / 180) * expectedPoints) }, // Aug 1 is ~166 days from Feb 15
+        ];
+
+        monthPositions.forEach(({ month, position }) => {
+          if (position < expectedPoints) {
+            labels[position] = month;
+          }
+        });
+        break;
+
+      case '1Y':
+        // 12 months back from today (Aug 15, 2024 - Aug 15, 2025)
+        // 252 points over 365 days
+        // Place labels where month boundaries actually occur
+
+        const oneYearStart = new Date(today);
+        oneYearStart.setFullYear(today.getFullYear() - 1); // Aug 15, 2024
+
+        // Calculate positions for each month's 1st
+        // Starting from Aug 15, 2024, calculate days to each month's 1st
+        const yearMonthPositions = [
+          { month: 'Sep', position: Math.floor((17 / 365) * expectedPoints) }, // Sep 1, 2024
+          { month: 'Oct', position: Math.floor((47 / 365) * expectedPoints) }, // Oct 1, 2024
+          { month: 'Nov', position: Math.floor((78 / 365) * expectedPoints) }, // Nov 1, 2024
+          { month: 'Dec', position: Math.floor((108 / 365) * expectedPoints) }, // Dec 1, 2024
+          { month: 'Jan', position: Math.floor((139 / 365) * expectedPoints) }, // Jan 1, 2025
+          { month: 'Feb', position: Math.floor((170 / 365) * expectedPoints) }, // Feb 1, 2025
+          { month: 'Mar', position: Math.floor((198 / 365) * expectedPoints) }, // Mar 1, 2025
+          { month: 'Apr', position: Math.floor((229 / 365) * expectedPoints) }, // Apr 1, 2025
+          { month: 'May', position: Math.floor((259 / 365) * expectedPoints) }, // May 1, 2025
+          { month: 'Jun', position: Math.floor((290 / 365) * expectedPoints) }, // Jun 1, 2025
+          { month: 'Jul', position: Math.floor((320 / 365) * expectedPoints) }, // Jul 1, 2025
+          { month: 'Aug', position: Math.floor((351 / 365) * expectedPoints) }, // Aug 1, 2025
+        ];
+
+        yearMonthPositions.forEach(({ month, position }) => {
+          if (position < expectedPoints) {
+            labels[position] = month;
+          }
+        });
+        break;
+
+      case '5Y':
+        // 5 years back from today (Aug 15, 2020 - Aug 15, 2025)
+        // 1260 points over ~1825 days
+        // Place labels at year boundaries
+
+        const fiveYearPositions = [
+          { year: '2021', position: Math.floor((138 / 1825) * expectedPoints) }, // Jan 1, 2021 is ~138 days from Aug 15, 2020
+          { year: '2022', position: Math.floor((503 / 1825) * expectedPoints) }, // Jan 1, 2022
+          { year: '2023', position: Math.floor((868 / 1825) * expectedPoints) }, // Jan 1, 2023
+          {
+            year: '2024',
+            position: Math.floor((1233 / 1825) * expectedPoints),
+          }, // Jan 1, 2024
+          {
+            year: '2025',
+            position: Math.floor((1599 / 1825) * expectedPoints),
+          }, // Jan 1, 2025
+        ];
+
+        fiveYearPositions.forEach(({ year, position }) => {
+          if (position < expectedPoints) {
+            labels[position] = year;
+          }
+        });
+        break;
+
+      default:
+        // Generic fallback
+        const interval = Math.floor(expectedPoints / 6);
+        for (let i = 0; i < 6; i++) {
+          const position = i * interval;
+          if (position < expectedPoints) {
+            labels[position] = `Point ${position + 1}`;
+          }
+        }
+    }
+
+    return labels;
   }
 
   formatChange(value: number): string {

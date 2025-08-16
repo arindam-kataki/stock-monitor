@@ -7,10 +7,7 @@
   min-height: calc(100vh - 64px);
 }
 
-// Page Header
-// Update this in src/app/features/analytics/analytics.scss
-
-// Page Header - with gradient background
+// Page Header with gradient background
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -27,12 +24,12 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      color: white; // Changed to white
+      color: white;
       font-size: 28px;
       font-weight: 600;
 
       mat-icon {
-        color: white; // Changed to white
+        color: white;
         font-size: 32px;
         width: 32px;
         height: 32px;
@@ -41,7 +38,7 @@
 
     .subtitle {
       margin: 8px 0 0 44px;
-      color: rgba(255, 255, 255, 0.9); // Changed to white with opacity
+      color: rgba(255, 255, 255, 0.9);
       font-size: 14px;
     }
   }
@@ -62,24 +59,6 @@
 
       mat-icon {
         color: #667eea;
-      }
-    }
-  }
-}
-
-// View Selector
-.view-selector-card {
-  margin-bottom: 24px;
-  padding: 12px;
-
-  .view-mode-toggle {
-    width: 100%;
-
-    mat-button-toggle {
-      flex: 1;
-
-      mat-icon {
-        margin-right: 8px;
       }
     }
   }
@@ -118,47 +97,107 @@
   animation: fadeIn 0.3s ease-in;
 }
 
-// Comparison View
-.comparison-view {
-  .controls-card {
-    margin-bottom: 24px;
-    padding: 20px;
+// Universal Controls Card
+.controls-card {
+  margin-bottom: 24px;
+  padding: 20px;
 
-    .controls-row {
+  .controls-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+
+    .control-group {
       display: flex;
-      gap: 24px;
-      align-items: center;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-width: 140px;
 
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        flex: 1;
+      &.flex-2 {
+        flex: 0 1 auto;
         min-width: 200px;
+        max-width: 400px;
+      }
 
-        label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #666;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
+      &.flex-3 {
+        flex: 3;
+        min-width: 250px;
+      }
 
-        mat-select {
-          width: 100%;
-        }
+      &.time-range-group {
+        flex: 0 0 auto;
+        min-width: auto;
 
         mat-button-toggle-group {
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          display: inline-flex;
+        }
+      }
+
+      label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      mat-select {
+        width: 100%;
+
+        &:disabled {
+          opacity: 0.6;
+        }
+      }
+
+      .view-selector,
+      .sort-selector {
+        min-width: 150px;
+
+        mat-option {
+          mat-icon {
+            margin-right: 8px;
+            vertical-align: middle;
+            font-size: 18px;
+          }
+
+          span {
+            vertical-align: middle;
+          }
+        }
+      }
+
+      .time-range-selector {
+        display: flex;
+        gap: 5px;
+
+        button {
+          min-width: 45px;
+          padding: 6px 12px;
+          font-size: 13px;
+
+          &.active {
+            background: #667eea;
+            color: white;
+          }
         }
       }
     }
+  }
 
-    .selected-stocks {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #e0e0e0;
+  // Selected stocks row with benchmark toggle
+  .selected-stocks-row {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+
+    .stocks-info {
+      flex: 1;
 
       label {
         display: block;
@@ -175,57 +214,156 @@
         }
       }
     }
-  }
 
-  // Metrics Row
+    .benchmark-toggle {
+      flex: 0 0 auto;
+
+      mat-slide-toggle {
+        mat-icon {
+          font-size: 18px;
+          margin-right: 4px;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+}
+
+// Comparison View
+.comparison-view {
+  // Metrics Row with compact design
   .metrics-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 
     .metric-card {
-      text-align: center;
-
-      mat-card-content {
-        padding: 20px;
-      }
-
-      .metric-label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-      }
-
-      .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-
-        &.positive {
-          color: #28a745;
+      &.compact {
+        mat-card-content {
+          padding: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          min-height: 0;
         }
 
-        &.negative {
-          color: #dc3545;
-        }
-      }
+        .metric-icon {
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+          color: #6c757d;
 
-      .metric-stock {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        margin: 4px 0;
+          &.top {
+            color: #28a745;
+          }
+
+          &.bottom {
+            color: #dc3545;
+          }
+        }
+
+        .metric-value {
+          font-size: 24px;
+          font-weight: bold;
+          line-height: 1;
+
+          &.positive {
+            color: #28a745;
+          }
+
+          &.negative {
+            color: #dc3545;
+          }
+        }
+
+        .metric-inline {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          line-height: 1;
+          height: 28px;
+
+          .metric-stock {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+          }
+
+          .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+          }
+        }
       }
     }
   }
 
-  // Chart Card
+  // Chart Card with resize controls
   .chart-card {
     mat-card-header {
       padding: 20px 20px 16px;
+
+      .chart-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        gap: 20px;
+
+        .chart-resize-controls {
+          display: flex;
+          gap: 2px;
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 2px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+          .resize-btn {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            padding: 0;
+
+            mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+              line-height: 18px;
+            }
+
+            &:hover:not(:disabled) {
+              background: rgba(102, 126, 234, 0.1);
+
+              mat-icon {
+                color: #667eea;
+              }
+            }
+
+            &:disabled {
+              opacity: 0.3;
+              cursor: not-allowed;
+            }
+
+            // Special style for reset button (middle button)
+            &:nth-child(2) {
+              mat-icon {
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+        }
+      }
 
       mat-card-title {
         font-size: 20px;
@@ -240,9 +378,21 @@
     }
 
     .chart-container {
-      height: 400px;
       padding: 20px;
       position: relative;
+      transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &.chart-small {
+        height: 250px;
+      }
+
+      &.chart-medium {
+        height: 400px;
+      }
+
+      &.chart-large {
+        height: 600px;
+      }
 
       canvas {
         width: 100% !important;
@@ -394,9 +544,170 @@
   .correlation-card {
     min-height: 400px;
 
-    .coming-soon {
+    mat-card-header {
+      padding: 20px 20px 16px;
+
+      mat-card-subtitle {
+        margin-top: 4px;
+        color: #666;
+      }
+    }
+
+    .correlation-legend {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+
+      .legend-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+
+      .legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: center;
+
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: #666;
+
+          .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+
+            &.strong-positive-corr {
+              background: rgba(220, 53, 69, 0.8);
+            }
+
+            &.moderate-positive-corr {
+              background: rgba(255, 193, 7, 0.7);
+            }
+
+            &.weak-corr {
+              background: rgba(108, 117, 125, 0.3);
+            }
+
+            &.moderate-negative-corr {
+              background: rgba(23, 162, 184, 0.7);
+            }
+
+            &.strong-negative-corr {
+              background: rgba(0, 123, 255, 0.8);
+            }
+          }
+        }
+      }
+    }
+
+    .chart-container {
+      height: 400px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 20px;
+
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+    }
+
+    .correlation-insights {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+
+      h4 {
+        margin: 0 0 16px 0;
+        color: #333;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+
+        .insight-card {
+          background: white;
+          border-radius: 8px;
+          padding: 16px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+          mat-icon {
+            font-size: 32px;
+            width: 32px;
+            height: 32px;
+            color: #667eea;
+          }
+
+          .insight-content {
+            flex: 1;
+
+            .insight-label {
+              font-size: 12px;
+              color: #666;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 4px;
+            }
+
+            .insight-value {
+              font-size: 16px;
+              font-weight: 600;
+              color: #333;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+
+              .correlation-value {
+                font-size: 14px;
+                padding: 2px 8px;
+                border-radius: 4px;
+
+                &.positive {
+                  background: rgba(40, 167, 69, 0.1);
+                  color: #28a745;
+                }
+
+                &.negative {
+                  background: rgba(0, 123, 255, 0.1);
+                  color: #007bff;
+                }
+              }
+
+              .diversity-label {
+                font-size: 12px;
+                padding: 2px 8px;
+                border-radius: 4px;
+                background: rgba(102, 126, 234, 0.1);
+                color: #667eea;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .insufficient-data,
+    .no-data {
       text-align: center;
-      padding: 80px 20px;
+      padding: 60px 20px;
       color: #666;
 
       mat-icon {
@@ -421,6 +732,42 @@
   }
 }
 
+// Empty states
+.no-selection {
+  .empty-state-card {
+    max-width: 500px;
+    margin: 60px auto;
+    text-align: center;
+    padding: 40px;
+
+    .empty-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: #999;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 24px;
+    }
+  }
+}
+
+// Subtitle indicators
+.benchmark-indicator,
+.sort-indicator {
+  color: #667eea;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
 // Animations
 @keyframes fadeIn {
   from {
@@ -434,6 +781,19 @@
 }
 
 // Responsive Design
+@media (max-width: 968px) {
+  .controls-card {
+    .controls-row {
+      .control-group {
+        &.flex-2 {
+          flex: 1;
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .analytics-container {
     padding: 10px;
@@ -450,19 +810,37 @@
     }
   }
 
-  .comparison-view {
-    .controls-card {
-      .controls-row {
-        flex-direction: column;
+  .controls-card {
+    .controls-row {
+      flex-direction: column;
 
-        .control-group {
+      .control-group {
+        width: 100%;
+
+        &.flex-2,
+        &.flex-3 {
           width: 100%;
         }
       }
     }
+  }
 
+  .comparison-view {
     .metrics-row {
       grid-template-columns: 1fr;
+    }
+
+    .chart-card {
+      mat-card-header {
+        .chart-header-content {
+          flex-direction: column;
+          gap: 12px;
+
+          .chart-resize-controls {
+            align-self: flex-end;
+          }
+        }
+      }
     }
   }
 
@@ -482,336 +860,35 @@
       padding: 12px;
     }
   }
+
+  .correlation-view {
+    .correlation-legend {
+      .legend-items {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    .correlation-insights {
+      .insights-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
 }
 
 @media (max-width: 480px) {
-  .view-selector-card {
-    .view-mode-toggle {
-      flex-direction: column;
+  .page-header {
+    padding: 16px;
 
-      mat-button-toggle {
-        width: 100%;
-      }
-    }
-  }
-}
-
-// Update/add these styles in analytics.scss
-
-.controls-card {
-  margin-bottom: 24px;
-  padding: 20px;
-
-  .controls-row {
-    display: flex;
-    gap: 16px;
-    align-items: flex-end; // Align to bottom so labels don't misalign controls
-    flex-wrap: wrap;
-
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-      min-width: 120px;
-
-      &.flex-2 {
-        flex: 2;
-        min-width: 200px;
-      }
-
-      label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      mat-select {
-        width: 100%;
-      }
-
-      .view-selector {
-        min-width: 150px;
-
-        mat-option {
-          mat-icon {
-            margin-right: 8px;
-            vertical-align: middle;
-          }
-
-          span {
-            vertical-align: middle;
-          }
-        }
-      }
-
-      mat-button-toggle-group {
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      mat-slide-toggle {
-        margin-top: 4px; // Align with other controls
-      }
-    }
-  }
-
-  .selected-stocks {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #e0e0e0;
-
-    label {
-      display: block;
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: #666;
-    }
-
-    .stock-chips {
-      mat-chip {
-        background: #f0f4ff;
-        color: #667eea;
-        font-weight: 500;
-      }
-    }
-  }
-}
-
-// Remove the view-selector-card styles
-// .view-selector-card { ... } // DELETE THIS ENTIRE BLOCK
-
-// Specific sort controls for heatmap
-.sort-controls-card {
-  margin-bottom: 16px;
-  padding: 12px 20px;
-
-  .control-group {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-
-    label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-  }
-}
-
-// Responsive adjustments
-@media (max-width: 968px) {
-  .controls-card {
-    .controls-row {
-      .control-group {
-        &.flex-2 {
-          flex: 1;
-          width: 100%;
-        }
-      }
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .controls-card {
-    .controls-row {
-      flex-direction: column;
-
-      .control-group {
-        width: 100%;
-
-        &.flex-2 {
-          width: 100%;
-        }
-      }
-    }
-  }
-}
-
-// Update/add these styles in analytics.scss
-
-.controls-card {
-  margin-bottom: 24px;
-  padding: 20px;
-
-  .controls-row {
-    display: flex;
-    gap: 16px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-
-    .control-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-      min-width: 140px;
-
-      &.flex-2 {
-        flex: 2;
-        min-width: 200px;
-      }
-
-      &.flex-3 {
-        flex: 3;
-        min-width: 250px;
-      }
-
-      label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      mat-select {
-        width: 100%;
-
-        &:disabled {
-          opacity: 0.6;
-        }
-      }
-
-      .view-selector,
-      .sort-selector {
-        min-width: 150px;
-
-        mat-option {
-          mat-icon {
-            margin-right: 8px;
-            vertical-align: middle;
-            font-size: 18px;
-          }
-
-          span {
-            vertical-align: middle;
-          }
-        }
-      }
-    }
-  }
-
-  // Selected stocks row with benchmark toggle
-  .selected-stocks-row {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #e0e0e0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-
-    .stocks-info {
-      flex: 1;
-
-      label {
-        display: block;
-        margin-bottom: 12px;
-        font-size: 14px;
-        color: #666;
-      }
-
-      .stock-chips {
-        mat-chip {
-          background: #f0f4ff;
-          color: #667eea;
-          font-weight: 500;
-        }
-      }
-    }
-
-    .benchmark-toggle {
-      flex: 0 0 auto;
-
-      mat-slide-toggle {
-        mat-icon {
-          font-size: 18px;
-          margin-right: 4px;
-          vertical-align: middle;
-        }
-      }
-    }
-  }
-}
-
-// Subtitle indicators
-.benchmark-indicator,
-.sort-indicator {
-  color: #667eea;
-  font-weight: 500;
-  margin-left: 8px;
-}
-
-// Update the metrics-row styles
-.metrics-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-
-  .metric-card {
-    &.compact {
-      mat-card-content {
-        padding: 12px; // Reduced padding
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        min-height: 0; // Remove min-height
-      }
-
-      .metric-icon {
+    .header-content {
+      h1 {
         font-size: 24px;
-        width: 24px;
-        height: 24px;
-
-        &.top {
-          color: #28a745;
-        }
-
-        &.bottom {
-          color: #dc3545;
-        }
-
-        // Default (average)
-        color: #6c757d;
       }
 
-      .metric-value {
-        font-size: 22px; // Slightly smaller
-        font-weight: bold;
-        line-height: 1;
-
-        &.positive {
-          color: #28a745;
-        }
-
-        &.negative {
-          color: #dc3545;
-        }
-      }
-
-      .metric-inline {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        line-height: 1;
-
-        .metric-stock {
-          font-size: 16px;
-          font-weight: 600;
-          color: #333;
-        }
-
-        .metric-value {
-          font-size: 18px;
-          font-weight: bold;
-        }
+      .subtitle {
+        margin-left: 0;
+        margin-top: 8px;
       }
     }
   }

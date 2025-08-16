@@ -63,14 +63,16 @@
         <!-- Time Range -->
         <div class="control-group flex-2">
           <label>Time Range:</label>
-          <mat-button-toggle-group
-            [(ngModel)]="selectedTimeRange"
-            (change)="onTimeRangeChange(selectedTimeRange)"
-          >
-            <mat-button-toggle *ngFor="let range of timeRanges" [value]="range">
+          <div class="time-range-selector">
+            <button
+              *ngFor="let range of timeRanges"
+              mat-button
+              [class.active]="range === selectedTimeRange"
+              (click)="onTimeRangeChange(range)"
+            >
               {{ range }}
-            </mat-button-toggle>
-          </mat-button-toggle-group>
+            </button>
+          </div>
         </div>
 
         <!-- View Selector Dropdown -->
