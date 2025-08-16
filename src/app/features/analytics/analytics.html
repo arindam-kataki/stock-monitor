@@ -75,6 +75,50 @@
           </div>
         </div>
 
+        <!-- End Date Picker -->
+        <div class="control-group flex-2">
+          <label>Ends On:</label>
+          <div class="end-date-controls">
+            <mat-form-field appearance="outline" class="date-picker-field">
+              <input
+                matInput
+                [matDatepicker]="endDatePicker"
+                [value]="effectiveEndDate"
+                [max]="maxDate"
+                [matDatepickerFilter]="dateFilter"
+                (dateChange)="onEndDateChange($event.value)"
+                [disabled]="!useCustomEndDate"
+                placeholder="End date"
+              />
+              <mat-datepicker-toggle
+                matSuffix
+                [for]="endDatePicker"
+                [disabled]="!useCustomEndDate"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #endDatePicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-slide-toggle
+              [(ngModel)]="useCustomEndDate"
+              (change)="toggleCustomEndDate()"
+              matTooltip="Toggle between today and custom end date"
+              color="primary"
+            >
+              {{ useCustomEndDate ? "Custom" : "Today" }}
+            </mat-slide-toggle>
+
+            <button
+              mat-icon-button
+              (click)="resetToToday()"
+              *ngIf="useCustomEndDate"
+              matTooltip="Reset to today"
+              class="reset-date-btn"
+            >
+              <mat-icon>today</mat-icon>
+            </button>
+          </div>
+        </div>
+
         <!-- View Selector Dropdown -->
         <div class="control-group">
           <label>View:</label>
@@ -198,27 +242,25 @@
       </div>
 
       <!-- Comparison Chart -->
+      <!-- Update this section in analytics.html -->
+
+      <!-- Comparison Chart -->
       <mat-card class="chart-card">
         <mat-card-header>
           <div class="chart-header-content">
             <div>
               <mat-card-title>Normalized Performance Comparison</mat-card-title>
               <mat-card-subtitle>
-                All stocks indexed to 0% at start date
-                <span *ngIf="showBenchmark" class="benchmark-indicator"
-                  >• S&P 500 benchmark included</span
-                >
+                {{ getDateRangeString() }} • All values indexed to 0% at start
               </mat-card-subtitle>
             </div>
-
-            <!-- Chart Resize Controls -->
             <div class="chart-resize-controls">
               <button
                 mat-icon-button
                 class="resize-btn"
                 (click)="decreaseChartSize()"
                 [disabled]="chartSize === 'small'"
-                matTooltip="Decrease height"
+                matTooltip="Decrease size"
               >
                 <mat-icon>remove</mat-icon>
               </button>
@@ -226,16 +268,16 @@
                 mat-icon-button
                 class="resize-btn"
                 (click)="resetChartSize()"
-                matTooltip="Reset to default"
+                matTooltip="Reset size"
               >
-                <mat-icon>refresh</mat-icon>
+                <mat-icon>aspect_ratio</mat-icon>
               </button>
               <button
                 mat-icon-button
                 class="resize-btn"
                 (click)="increaseChartSize()"
                 [disabled]="chartSize === 'large'"
-                matTooltip="Increase height"
+                matTooltip="Increase size"
               >
                 <mat-icon>add</mat-icon>
               </button>
