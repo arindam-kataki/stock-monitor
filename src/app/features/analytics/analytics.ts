@@ -188,26 +188,28 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
   private loadData(): void {
     this.loading = true;
+    this.error = null;
 
-    // Actively fetch ribbons from the backend
     this.stockDataService.getUserRibbons().subscribe({
       next: (ribbons) => {
         this.ribbons = ribbons.filter((r) => r.isActive);
+        this.loading = false;
 
-        if (this.ribbons.length > 0) {
-          // Auto-select first ribbon
-          this.selectedRibbons = [this.ribbons[0]];
-          this.loadStocksForRibbons();
-        } else {
-          // No active ribbons
-          this.loading = false;
-          this.showEmptyState();
-        }
+        // DON'T auto-select - let user choose
+        // Remove this auto-selection:
+        // if (this.ribbons.length > 0) {
+        //   this.selectedRibbons = [this.ribbons[0]];
+        //   this.loadStocksForRibbons();
+        // }
+
+        // Initialize as empty array
+        this.selectedRibbons = [];
       },
       error: (error) => {
         console.error('Error loading ribbons:', error);
         this.loading = false;
-        this.error = 'Failed to load watches. Please try again.';
+        this.error =
+          'Failed to load watches. Please check if backend is running.';
       },
     });
   }
