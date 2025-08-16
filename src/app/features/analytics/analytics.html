@@ -44,6 +44,7 @@
     <!-- Universal Controls Bar -->
     <mat-card class="controls-card">
       <div class="controls-row">
+        
         <!-- Ribbon Selection -->
         <div class="control-group flex-3">
           <label>Select Watches:</label>
@@ -83,39 +84,18 @@
               <input
                 matInput
                 [matDatepicker]="endDatePicker"
-                [value]="effectiveEndDate"
+                [value]="customEndDate"
                 [max]="maxDate"
                 [matDatepickerFilter]="dateFilter"
                 (dateChange)="onEndDateChange($event.value)"
-                [disabled]="!useCustomEndDate"
-                placeholder="End date"
+                placeholder="Select end date"
               />
               <mat-datepicker-toggle
                 matSuffix
                 [for]="endDatePicker"
-                [disabled]="!useCustomEndDate"
               ></mat-datepicker-toggle>
               <mat-datepicker #endDatePicker></mat-datepicker>
             </mat-form-field>
-
-            <mat-slide-toggle
-              [(ngModel)]="useCustomEndDate"
-              (change)="toggleCustomEndDate()"
-              matTooltip="Toggle between today and custom end date"
-              color="primary"
-            >
-              {{ useCustomEndDate ? "Custom" : "Today" }}
-            </mat-slide-toggle>
-
-            <button
-              mat-icon-button
-              (click)="resetToToday()"
-              *ngIf="useCustomEndDate"
-              matTooltip="Reset to today"
-              class="reset-date-btn"
-            >
-              <mat-icon>today</mat-icon>
-            </button>
           </div>
         </div>
 

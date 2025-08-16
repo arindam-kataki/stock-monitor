@@ -25,6 +25,9 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatInputModule } from '@angular/material/input';
 
 // Chart.js
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
@@ -74,11 +77,15 @@ interface HeatmapCell {
     MatChipsModule,
     MatButtonToggleModule,
     MatTooltipModule,
+    MatSlideToggleModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     MatProgressSpinnerModule,
     MatCheckboxModule,
     MatSlideToggleModule,
     MatTabsModule,
     MatSnackBarModule,
+    MatInputModule,
   ],
   templateUrl: './analytics.html',
   styleUrls: ['./analytics.scss'],
@@ -153,7 +160,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   correlationMatrix: number[][] = [];
   correlationLabels: string[] = [];
 
-  useCustomEndDate = false;
   customEndDate: Date = new Date();
   maxDate: Date = new Date();
 
@@ -231,10 +237,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   // ============== NORMALIZED COMPARISON ==============
-
-  get effectiveEndDate(): Date {
-    return this.useCustomEndDate ? this.customEndDate : new Date();
-  }
 
   private createNormalizedData(): void {
     this.normalizedData = [];
@@ -316,9 +318,74 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Handle date changes
+  onEndDateChange(date: Date | null): void {
+    if (date && date <= new Date()) {
+      this.customEndDate = date;
+      this.loadChartData();
+      this.updateComparisonChart();
+    }
+  }
+
+  // Date validation
+  dateFilter = (date: Date | null): boolean => {
+    if (!date) return false;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (date > today) return false;
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 5);
+    if (date < minDate) return false;
+    return true;
+  };
+
+  setEndDate(
+    preset: 'yesterday' | 'lastWeek' | 'lastMonth' | 'lastQuarter' | 'lastYear'
+  ): void {
+    const date = new Date();
+
+    switch (preset) {
+      case 'yesterday':
+        date.setDate(date.getDate() - 1);
+        // Skip to Friday if yesterday was Sunday
+        if (date.getDay() === 0) date.setDate(date.getDate() - 2);
+        // Skip to Friday if yesterday was Saturday
+        if (date.getDay() === 6) date.setDate(date.getDate() - 1);
+        break;
+
+      case 'lastWeek':
+        date.setDate(date.getDate() - 7);
+        break;
+
+      case 'lastMonth':
+        date.setMonth(date.getMonth() - 1);
+        break;
+
+      case 'lastQuarter':
+        date.setMonth(date.getMonth() - 3);
+        break;
+
+      case 'lastYear':
+        date.setFullYear(date.getFullYear() - 1);
+        break;
+    }
+
+    this.customEndDate = date;
+
+    // Reload data
+    this.loadChartData();
+    this.updateComparisonChart();
+
+    this.snackBar.open(
+      `End date set to ${this.formatDateForDisplay(date)}`,
+      'Close',
+      { duration: 2000 }
+    );
+  }
+
   // Update the getDateRangeString method:
   getDateRangeString(): string {
-    const endDate = this.effectiveEndDate;
+    const endDate = this.customEndDate;
     let startDate: Date;
 
     switch (this.selectedTimeRange) {
