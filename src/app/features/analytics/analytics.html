@@ -14,10 +14,6 @@
     </div>
 
     <div class="header-actions">
-      <button mat-stroked-button (click)="addStock()">
-        <mat-icon>add</mat-icon>
-        Add Stock
-      </button>
       <button mat-stroked-button (click)="exportData()">
         <mat-icon>download</mat-icon>
         Export
@@ -44,7 +40,6 @@
     <!-- Universal Controls Bar -->
     <mat-card class="controls-card">
       <div class="controls-row">
-        
         <!-- Ribbon Selection -->
         <div class="control-group flex-3">
           <label>Select Watches:</label>
@@ -77,7 +72,7 @@
         </div>
 
         <!-- End Date Picker -->
-        <div class="control-group flex-2">
+        <div class="control-group">
           <label>Ends On:</label>
           <div class="end-date-controls">
             <mat-form-field appearance="outline" class="date-picker-field">

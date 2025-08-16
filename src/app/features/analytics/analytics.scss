@@ -893,3 +893,181 @@
     }
   }
 }
+
+// Controls Card - Add this section
+.controls-card {
+  margin-bottom: 24px;
+
+  .controls-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start; // This aligns items at the top
+
+    &.secondary {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      // Flex sizing classes
+      &.flex-1 {
+        flex: 1;
+      }
+      &.flex-2 {
+        flex: 2;
+      }
+      &.flex-3 {
+        flex: 3;
+      }
+
+      // Consistent label styling
+      > label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+        padding: 0;
+        height: 16px; // Fixed height ensures alignment
+        line-height: 16px;
+        display: block;
+      }
+
+      // Control containers
+      mat-select,
+      .time-range-selector,
+      .end-date-controls,
+      mat-button-toggle-group,
+      .sort-controls {
+        margin: 0; // Remove any default margins
+      }
+
+      // Time range selector buttons
+      .time-range-selector {
+        display: flex;
+        gap: 4px;
+
+        button {
+          padding: 6px 12px;
+          min-width: auto;
+
+          &.active {
+            background: #667eea;
+            color: white;
+          }
+        }
+      }
+
+      // End date controls
+      .end-date-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .date-picker-field {
+          max-width: 200px; // Limit the width
+
+          ::ng-deep {
+            .mat-mdc-form-field {
+              width: 100%;
+            }
+
+            .mat-mdc-text-field-wrapper {
+              padding: 0;
+            }
+
+            .mat-mdc-form-field-subscript-wrapper {
+              display: none;
+            }
+
+            // Add padding to the input text
+            .mat-mdc-input-element {
+              padding-left: 12px !important;
+            }
+
+            // Adjust the field sizing
+            .mat-mdc-form-field-infix {
+              min-height: 40px;
+              padding: 8px 0;
+            }
+          }
+        }
+      }
+
+      // Sort controls (for heatmap view)
+      .sort-controls {
+        display: flex;
+        gap: 8px;
+
+        button {
+          padding: 6px 12px;
+        }
+      }
+    }
+  }
+
+  // Date presets row
+  .date-presets {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+      margin-right: 8px;
+    }
+
+    button {
+      padding: 4px 12px;
+      font-size: 13px;
+    }
+  }
+}
+
+// Add responsive behavior
+@media (max-width: 1200px) {
+  .controls-card {
+    .controls-row {
+      flex-wrap: wrap; // Allow wrapping on smaller screens
+
+      .control-group {
+        min-width: 200px; // Minimum width before wrapping
+
+        &.flex-3 {
+          flex: 1 1 300px; // Can shrink but prefers 300px
+        }
+
+        &.flex-2 {
+          flex: 1 1 250px; // Can shrink but prefers 250px
+        }
+
+        &.flex-1 {
+          flex: 1 1 150px; // Can shrink but prefers 150px
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .controls-card {
+    .controls-row {
+      flex-direction: column; // Stack vertically on mobile
+
+      .control-group {
+        width: 100%;
+
+        .end-date-controls {
+          .date-picker-field {
+            max-width: 100%; // Full width on mobile
+          }
+        }
+      }
+    }
+  }
+}

@@ -113,7 +113,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
   // Time Range
   timeRanges: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y'];
-  selectedTimeRange: TimeRange = '1M';
+  selectedTimeRange: TimeRange = '1D';
 
   // Comparison Settings
   showBenchmark = false;
@@ -171,6 +171,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Initialize with today's date
+    this.customEndDate = new Date();
     this.loadData();
   }
 
@@ -187,21 +189,33 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private loadData(): void {
     this.loading = true;
 
-    // Load ribbons
-    this.stockDataService.ribbons$.pipe(takeUntil(this.destroy$)).subscribe({
+    // Actively fetch ribbons from the backend
+    this.stockDataService.getUserRibbons().subscribe({
       next: (ribbons) => {
         this.ribbons = ribbons.filter((r) => r.isActive);
-        if (this.ribbons.length > 0 && this.selectedRibbons.length === 0) {
+
+        if (this.ribbons.length > 0) {
           // Auto-select first ribbon
           this.selectedRibbons = [this.ribbons[0]];
           this.loadStocksForRibbons();
+        } else {
+          // No active ribbons
+          this.loading = false;
+          this.showEmptyState();
         }
       },
       error: (error) => {
-        this.error = 'Failed to load ribbons';
+        console.error('Error loading ribbons:', error);
         this.loading = false;
+        this.error = 'Failed to load watches. Please try again.';
       },
     });
+  }
+
+  private showEmptyState(): void {
+    this.loading = false;
+    this.error = null;
+    // The template will show empty state when selectedRibbons.length === 0
   }
 
   loadStocksForRibbons(): void {
@@ -224,16 +238,27 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private loadChartData(): void {
-    // Generate mock data for each stock
+    // Generate mock data
+    this.stockChartData.clear();
+
     for (const stock of this.selectedStocks) {
       const data = this.generateMockChartData(stock.symbol);
       this.stockChartData.set(stock.symbol, data);
     }
 
+    // Create normalized data
     this.createNormalizedData();
+
+    // Other data processing
     this.createHeatmapData();
     this.calculateMetrics();
+    this.calculateCorrelations();
+
+    // Set loading to false
     this.loading = false;
+
+    // Chart will render automatically in createNormalizedData()
+    // when normalizedData is populated
   }
 
   // ============== NORMALIZED COMPARISON ==============
@@ -243,6 +268,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.chartLabels = [];
 
     if (this.selectedStocks.length === 0) return;
+
+    console.log('createNormalizedData called');
+    console.log('selectedStocks:', this.selectedStocks.length);
 
     // Get the shortest dataset length
     let minDataPoints = Infinity;
@@ -293,6 +321,16 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     this.updateComparisonChart();
+
+    console.log('normalizedData created:', this.normalizedData.length);
+    console.log('chartLabels:', this.chartLabels.length);
+
+    if (this.normalizedData.length > 0) {
+      console.log('Calling updateComparisonChart...');
+      this.updateComparisonChart();
+    } else {
+      console.log('No normalized data to render');
+    }
   }
 
   private addBenchmarkData(): void {
@@ -451,7 +489,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private generateSmartLabels(timeRange: TimeRange): string[] {
     const expectedPoints = this.getDataPointsForRange();
     const labels: string[] = new Array(expectedPoints).fill('');
-    const today = new Date(); // August 15, 2025
+    const today = this.customEndDate;
 
     switch (timeRange) {
       case '1D':
@@ -662,7 +700,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   // Also update the updateComparisonChart method to properly use the labels:
   private updateComparisonChart(): void {
     if (!this.comparisonChartRef) return;
-
+    console.log('if (!this.comparisonChartRef) return;');
     const ctx = this.comparisonChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
