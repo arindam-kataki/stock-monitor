@@ -1,21 +1,20 @@
 <!-- src/app/features/dashboard/dashboard.html -->
 
+<div class="page-header">
+  <div class="header-content">
+    <h2>
+      <mat-icon>dashboard</mat-icon>
+      Dashboard
+    </h2>
+    <!-- NO subtitle, NO header-actions -->
+  </div>
+</div>
+
 <div class="dashboard-container">
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <mat-spinner></mat-spinner>
     <p>Loading dashboard...</p>
-  </div>
-
-  <!-- Error State -->
-  <div *ngIf="error && !loading" class="error-container">
-    <mat-card class="error-card">
-      <mat-icon class="error-icon">error_outline</mat-icon>
-      <h3>{{ error }}</h3>
-      <button mat-raised-button color="primary" routerLink="/configuration">
-        Go to Configuration
-      </button>
-    </mat-card>
   </div>
 
   <!-- Dashboard Content -->
@@ -321,125 +320,125 @@
     </div>
   </div>
 
-  <!-- No Active Ribbons -->
   <div
     *ngIf="!loading && !error && activeRibbons.length === 0"
-    class="no-ribbons"
+    class="empty-state"
   >
-    <mat-card class="empty-state-card">
-      <mat-icon class="empty-icon">dashboard_customize</mat-icon>
-      <h2>No Active Watches</h2>
-      <p>
-        You need to create and activate at least one watch list to view the
-        dashboard.
-      </p>
-      <button mat-raised-button color="primary" routerLink="/configuration">
-        <mat-icon>add_circle</mat-icon>
-        Create Watch List
-      </button>
-    </mat-card>
-  </div>
-</div>
-
-<!-- Watch Dropdown Menu -->
-<mat-menu #watchMenu="matMenu" class="watch-dropdown-menu">
-  <!-- Watches List Section -->
-  <div class="menu-section watches-section" (click)="$event.stopPropagation()">
-    <div class="menu-title">Your Watches</div>
-    <button
-      mat-menu-item
-      *ngFor="let ribbon of activeRibbons; let i = index"
-      (click)="manualSelectRibbon(i)"
-      [class.active]="i === currentRibbonIndex"
-      class="watch-menu-item"
-    >
-      <div class="watch-item">
-        <span class="watch-icon">{{ ribbon.icon }}</span>
-        <div class="watch-details">
-          <span class="watch-label">{{ ribbon.name }}</span>
-          <span class="stock-count"
-            >{{ ribbon.selectedStocks.length }} stocks</span
-          >
-        </div>
-        <!-- Performance indicator could go here -->
-        <mat-icon *ngIf="i === currentRibbonIndex" class="check-icon"
-          >check</mat-icon
-        >
-      </div>
+    <mat-icon class="empty-icon">dashboard_customize</mat-icon>
+    <h3>No watches configured yet</h3>
+    <p>Create your first watch to start monitoring stocks</p>
+    <button mat-raised-button color="primary" routerLink="/configuration">
+      <mat-icon>add</mat-icon>
+      Go to Configuration
     </button>
   </div>
 
-  <mat-divider></mat-divider>
-
-  <!-- Playback Controls Section -->
-  <div class="menu-section controls-section" (click)="$event.stopPropagation()">
-    <div class="menu-title">Playback Controls</div>
-
-    <!-- Auto-cycle Toggle -->
-    <div class="control-row">
-      <span class="control-label">Auto-cycle</span>
-      <mat-slide-toggle
-        [(ngModel)]="settings.autoCycle"
-        (change)="toggleAutoCycle()"
-        color="primary"
+  <!-- Watch Dropdown Menu -->
+  <mat-menu #watchMenu="matMenu" class="watch-dropdown-menu">
+    <!-- Watches List Section -->
+    <div
+      class="menu-section watches-section"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="menu-title">Your Watches</div>
+      <button
+        mat-menu-item
+        *ngFor="let ribbon of activeRibbons; let i = index"
+        (click)="manualSelectRibbon(i)"
+        [class.active]="i === currentRibbonIndex"
+        class="watch-menu-item"
       >
-      </mat-slide-toggle>
+        <div class="watch-item">
+          <span class="watch-icon">{{ ribbon.icon }}</span>
+          <div class="watch-details">
+            <span class="watch-label">{{ ribbon.name }}</span>
+            <span class="stock-count"
+              >{{ ribbon.selectedStocks.length }} stocks</span
+            >
+          </div>
+          <!-- Performance indicator could go here -->
+          <mat-icon *ngIf="i === currentRibbonIndex" class="check-icon"
+            >check</mat-icon
+          >
+        </div>
+      </button>
     </div>
 
-    <!-- Play/Pause Controls -->
-    <div class="control-row" *ngIf="settings.autoCycle">
-      <div class="play-controls">
-        <button mat-mini-fab (click)="previousRibbon()" matTooltip="Previous">
-          <mat-icon>skip_previous</mat-icon>
-        </button>
-        <button
-          mat-mini-fab
-          [color]="isAutoCycling ? 'warn' : 'primary'"
-          (click)="isAutoCycling ? pauseAutoCycle() : resumeAutoCycle()"
-          [matTooltip]="isAutoCycling ? 'Pause' : 'Play'"
+    <mat-divider></mat-divider>
+
+    <!-- Playback Controls Section -->
+    <div
+      class="menu-section controls-section"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="menu-title">Playback Controls</div>
+
+      <!-- Auto-cycle Toggle -->
+      <div class="control-row">
+        <span class="control-label">Auto-cycle</span>
+        <mat-slide-toggle
+          [(ngModel)]="settings.autoCycle"
+          (change)="toggleAutoCycle()"
+          color="primary"
         >
-          <mat-icon>{{ isAutoCycling ? "pause" : "play_arrow" }}</mat-icon>
-        </button>
-        <button mat-mini-fab (click)="nextRibbon()" matTooltip="Next">
-          <mat-icon>skip_next</mat-icon>
-        </button>
+        </mat-slide-toggle>
+      </div>
+
+      <!-- Play/Pause Controls -->
+      <div class="control-row" *ngIf="settings.autoCycle">
+        <div class="play-controls">
+          <button mat-mini-fab (click)="previousRibbon()" matTooltip="Previous">
+            <mat-icon>skip_previous</mat-icon>
+          </button>
+          <button
+            mat-mini-fab
+            [color]="isAutoCycling ? 'warn' : 'primary'"
+            (click)="isAutoCycling ? pauseAutoCycle() : resumeAutoCycle()"
+            [matTooltip]="isAutoCycling ? 'Pause' : 'Play'"
+          >
+            <mat-icon>{{ isAutoCycling ? "pause" : "play_arrow" }}</mat-icon>
+          </button>
+          <button mat-mini-fab (click)="nextRibbon()" matTooltip="Next">
+            <mat-icon>skip_next</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interval Slider -->
+      <div class="control-row interval-control" *ngIf="settings.autoCycle">
+        <div class="interval-label">
+          <span class="control-label">Interval</span>
+          <span class="interval-value">{{ settings.cycleInterval }}s</span>
+        </div>
+        <mat-slider
+          min="5"
+          max="60"
+          step="5"
+          discrete
+          [displayWith]="formatLabel"
+          color="primary"
+        >
+          <input
+            matSliderThumb
+            [(ngModel)]="settings.cycleInterval"
+            (ngModelChange)="updateCycleInterval()"
+          />
+        </mat-slider>
       </div>
     </div>
 
-    <!-- Interval Slider -->
-    <div class="control-row interval-control" *ngIf="settings.autoCycle">
-      <div class="interval-label">
-        <span class="control-label">Interval</span>
-        <span class="interval-value">{{ settings.cycleInterval }}s</span>
-      </div>
-      <mat-slider
-        min="5"
-        max="60"
-        step="5"
-        discrete
-        [displayWith]="formatLabel"
-        color="primary"
-      >
-        <input
-          matSliderThumb
-          [(ngModel)]="settings.cycleInterval"
-          (ngModelChange)="updateCycleInterval()"
-        />
-      </mat-slider>
+    <mat-divider></mat-divider>
+
+    <!-- Footer Links -->
+    <div class="menu-footer">
+      <a mat-menu-item routerLink="/configuration">
+        <mat-icon>settings</mat-icon>
+        <span>Configure Watches</span>
+      </a>
+      <a mat-menu-item routerLink="/display">
+        <mat-icon>tune</mat-icon>
+        <span>Display Settings</span>
+      </a>
     </div>
-  </div>
-
-  <mat-divider></mat-divider>
-
-  <!-- Footer Links -->
-  <div class="menu-footer">
-    <a mat-menu-item routerLink="/configuration">
-      <mat-icon>settings</mat-icon>
-      <span>Configure Watches</span>
-    </a>
-    <a mat-menu-item routerLink="/display">
-      <mat-icon>tune</mat-icon>
-      <span>Display Settings</span>
-    </a>
-  </div>
-</mat-menu>
+  </mat-menu>
+</div>

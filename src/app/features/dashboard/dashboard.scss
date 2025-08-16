@@ -491,3 +491,79 @@
     }
   }
 }
+
+// Page Header - Minimal version to save space
+.page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 20px 32px; // Reduced vertical padding
+  margin-bottom: 24px; // Less margin to save space
+  color: white;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+
+  .header-content {
+    h2 {
+      font-size: 28px;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      mat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+    // NO subtitle styling needed
+  }
+}
+
+// Empty State - Matching Configuration page
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  max-width: 600px;
+
+  .empty-icon {
+    font-size: 80px;
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #667eea;
+  }
+
+  h3 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 12px 0;
+  }
+
+  p {
+    font-size: 16px;
+    color: #666;
+    margin: 0 0 32px 0;
+    line-height: 1.5;
+  }
+
+  button {
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
