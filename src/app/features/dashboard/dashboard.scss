@@ -1,5 +1,8 @@
 .dashboard-container {
   height: calc(100vh - 140px);
+  padding: 20px; // ADD THIS LINE - matches other pages
+  min-height: calc(100vh - 64px); // ADD THIS LINE
+  background: #f8f9fa; // ADD THIS LINE - optional, for consistency
 
   .loading-container {
     display: flex;
@@ -520,50 +523,93 @@
   }
 }
 
-// Empty State - Matching Configuration page
+// Empty state - EXACTLY matching Configuration page
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 40px;
   text-align: center;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin: 0 auto;
-  max-width: 600px;
+  padding: 60px 20px; // Match configuration padding
+  // Remove these lines to match configuration:
+  // display: flex;
+  // flex-direction: column;
+  // align-items: center;
+  // justify-content: center;
+  // padding: 80px 40px;
+  // background: white;
+  // border-radius: 16px;
+  // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  // margin: 0 auto;
+  // max-width: 600px;
 
   .empty-icon {
-    font-size: 80px;
-    width: 120px;
-    height: 120px;
-    background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    color: #667eea;
+    font-size: 64px; // Change from 80px to 64px
+    width: 64px; // ADD explicit width
+    height: 64px;
+    color: #ccc; // Change from #667eea to #ccc
+    margin-bottom: 16px; // Change from 24px to 16px
+    // Remove these background styles:
+    // width: 120px;
+    // height: 120px;
+    // background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+    // border-radius: 50%;
+    // display: flex;
+    // align-items: center;
+    // justify-content: center;
   }
 
   h3 {
-    font-size: 24px;
-    font-weight: 500;
-    color: #333;
-    margin: 0 0 12px 0;
+    color: #666;
+    margin: 0 0 8px 0;
+    font-size: 22px;
+    font-weight: 400; // Normal weight
   }
 
   p {
+    color: #999;
+    margin: 0 0 24px 0;
     font-size: 16px;
-    color: #666;
-    margin: 0 0 32px 0;
-    line-height: 1.5;
+    // Remove: line-height: 1.5;
   }
 
   button {
     mat-icon {
       margin-right: 8px;
+    }
+  }
+}
+
+.dashboard-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  // The empty state inside will now match configuration exactly
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+
+    .empty-icon {
+      font-size: 64px;
+      color: #ccc;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      color: #666;
+      margin: 0 0 8px 0;
+      font-size: 22px;
+    }
+
+    p {
+      color: #999;
+      margin: 0 0 24px 0;
+      font-size: 16px;
+    }
+
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
     }
   }
 }

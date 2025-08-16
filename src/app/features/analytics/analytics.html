@@ -453,19 +453,36 @@
         </mat-card-content>
       </mat-card>
     </div>
+  </div>
 
-    <!-- No Stocks Selected Message -->
-    <div
-      *ngIf="selectedStocks.length === 0 && selectedRibbons.length === 0"
-      class="no-selection"
-    >
-      <mat-card class="empty-state-card">
-        <mat-icon class="empty-icon">insert_chart</mat-icon>
-        <h2>No Watches Selected</h2>
-        <p>
-          Select one or more watches from the dropdown above to begin analysis
-        </p>
-      </mat-card>
+  <div
+    *ngIf="
+      !loading && !error 
+    "
+    class="analytics-section"
+  >
+    <div class="empty-state">
+      <mat-icon class="empty-icon">touch_app</mat-icon>
+      <h3>No watches selected</h3>
+      <p>
+        Select one or more watches from the controls above to begin analysis
+      </p>
+      <!-- No button here - they need to use the dropdown above -->
+    </div>
+  </div>
+
+  <div
+    *ngIf="!loading && !error && ribbons.length === 0"
+    class="analytics-section"
+  >
+    <div class="empty-state">
+      <mat-icon class="empty-icon">visibility_off</mat-icon>
+      <h3>No watches configured yet</h3>
+      <p>Create your first watch to start analyzing stocks</p>
+      <button mat-raised-button color="primary" routerLink="/configuration">
+        <mat-icon>add</mat-icon>
+        Go to Configuration
+      </button>
     </div>
   </div>
 </div>

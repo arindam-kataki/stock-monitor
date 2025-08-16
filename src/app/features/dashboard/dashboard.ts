@@ -185,11 +185,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
           if (this.activeRibbons.length > 0) {
             this.selectRibbon(0);
-          } else {
-            this.loading = false;
-            this.error =
-              'No active ribbons configured. Please configure ribbons in the Configuration page.';
           }
+
+          this.loading = false; // Just set loading to false
         },
         error: (error) => {
           console.error('Error loading ribbons:', error);
