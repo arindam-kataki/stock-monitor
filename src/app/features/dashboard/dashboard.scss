@@ -622,7 +622,8 @@
   // ... existing styles ...
 
   // Control group - HORIZONTAL layout with label to the left
-  .control-group.view-control {
+  .control-group.view-control,
+  .control-group.sort-control {
     display: flex;
     flex-direction: row; // Change from column to row
     align-items: center; // Center vertically

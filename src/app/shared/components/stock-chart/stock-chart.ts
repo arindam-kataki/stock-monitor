@@ -13,6 +13,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import { ChartData, TimeRange } from '../../../core/models/stock.models';
+import { Stock } from '../../../core/models/stock.models';
 
 // Register Chart.js components
 Chart.register(...registerables);
@@ -38,6 +39,30 @@ export class StockChartComponent
   @Input() stocks?: any[]; // For future combined view
 
   private chart?: Chart;
+
+  private colors = [
+    '#FF6B6B',
+    '#4ECDC4',
+    '#95E77E',
+    '#FFD93D',
+    '#6C5CE7',
+    '#A8E6CF',
+    '#FD79A8',
+    '#45B7D1',
+    '#96CEB4',
+    '#FFEAA7',
+    '#74B9FF',
+    '#A29BFE',
+  ];
+
+  // Check if this is a combined chart
+  private isCombinedChart(): boolean {
+    return !!(
+      this.symbol === 'combined' &&
+      this.stocks &&
+      this.stocks.length > 0
+    );
+  }
 
   ngAfterViewInit(): void {
     this.createChart();
@@ -89,6 +114,10 @@ export class StockChartComponent
   }
 
   private prepareChartData(): any {
+    if (this.isCombinedChart()) {
+      return this.prepareCombinedChartData();
+    }
+
     if (!this.data || !this.data.data) {
       return { labels: [], datasets: [] };
     }
@@ -131,7 +160,140 @@ export class StockChartComponent
     return { labels, datasets };
   }
 
+  private prepareCombinedChartData(): any {
+    const datasets: any[] = [];
+    let labels: string[] = [];
+
+    // Get labels from first stock's data
+    if (this.stocks.length > 0 && this.data) {
+      const firstStockData = this.data.data;
+      labels = firstStockData.map((point) => {
+        const date = new Date(point.date || point.timestamp || '');
+        return this.formatDateLabel(date);
+      });
+    }
+
+    // Create normalized dataset for each stock
+    this.stocks.forEach((stock, index) => {
+      // Extract this stock's data from the combined data
+      const stockData =
+        this.data?.data.filter((point) =>
+          point.date?.startsWith(`${stock.symbol}_`)
+        ) || [];
+
+      if (stockData.length === 0) return;
+
+      // Normalize data to start at 100
+      const firstValue = stockData[0].close;
+      const normalizedData = stockData.map((point) => ({
+        x: point.date?.replace(`${stock.symbol}_`, ''),
+        y: (point.close / firstValue) * 100,
+      }));
+
+      datasets.push({
+        label: stock.symbol,
+        data: normalizedData.map((d) => d.y),
+        borderColor: this.colors[index % this.colors.length],
+        backgroundColor: this.colors[index % this.colors.length] + '20',
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        tension: 0.1,
+        fill: false,
+      });
+    });
+
+    return { labels, datasets };
+  }
+
+  private getCombinedChartOptions(): any {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            padding: 15,
+            usePointStyle: true,
+            font: {
+              size: 12,
+            },
+          },
+        },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: (context: any) => {
+              const value = context.parsed.y;
+              const change = value - 100;
+              const changeStr =
+                change >= 0
+                  ? `+${change.toFixed(2)}%`
+                  : `${change.toFixed(2)}%`;
+              return `${context.dataset.label}: ${value.toFixed(
+                2
+              )} (${changeStr})`;
+            },
+          },
+        },
+        annotation: {
+          annotations: {
+            baseline: {
+              type: 'line',
+              yMin: 100,
+              yMax: 100,
+              borderColor: '#667eea',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              label: {
+                content: 'Baseline (100)',
+                enabled: true,
+                position: 'end',
+              },
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: {
+            display: false,
+          },
+        },
+        y: {
+          display: true,
+          position: 'left',
+          grid: {
+            color: '#f0f0f0',
+          },
+          ticks: {
+            callback: function (value: any) {
+              return value.toFixed(0);
+            },
+          },
+          title: {
+            display: true,
+            text: 'Normalized Value',
+          },
+        },
+      },
+    };
+  }
+
   private getChartOptions(): any {
+    if (this.isCombinedChart()) {
+      return this.getCombinedChartOptions();
+    }
+
     return {
       responsive: true,
       maintainAspectRatio: false,

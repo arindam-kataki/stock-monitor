@@ -22,6 +22,8 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 
 // Services and Models
 import { StockDataService } from '../../core/services/stock-data/stock-data.service';
@@ -80,7 +82,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   stockChartData: Map<string, ChartData> = new Map();
 
   // Time Range Selection
-  timeRanges: TimeRange[] = ['1D', '5D', '1M', '3M', '6M', '1Y'];
+  timeRanges: TimeRange[] = ['1D', '5D', '1M', '3M', '6M'];
   selectedTimeRange: TimeRange = '1D';
 
   // Auto-cycle
@@ -504,43 +506,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getCombinedChartData(): ChartData {
-    // This version creates a dataset suitable for showing multiple lines
-    // Your chart component would need to handle this differently
-
-    const allStockData: ChartDataPoint[] = [];
+    const allData: ChartDataPoint[] = [];
     const stockSymbols: string[] = [];
 
-    // Collect all data points with stock symbol tags
-    for (const stock of this.selectedStocks) {
-      const data = this.stockChartData.get(stock.symbol);
-      if (data && data.data && data.data.length > 0) {
-        stockSymbols.push(stock.symbol);
+    // Combine all stock data with normalized values
+    this.selectedStocks.forEach((stock) => {
+      const stockData = this.stockChartData.get(stock.symbol);
+      if (stockData && stockData.data) {
+        const basePrice = stockData.data[0].close;
 
-        // Normalize to percentage change from start
-        const basePrice = data.data[0].close;
-
-        data.data.forEach((point, index) => {
-          const normalizedPoint: ChartDataPoint = {
+        stockData.data.forEach((point, index) => {
+          // Create a combined data point with stock symbol prefix
+          allData.push({
             ...point,
-            // Store normalized values as percentage change
-            open: ((point.open - basePrice) / basePrice) * 100,
-            high: ((point.high - basePrice) / basePrice) * 100,
-            low: ((point.low - basePrice) / basePrice) * 100,
-            close: ((point.close - basePrice) / basePrice) * 100,
-            volume: point.volume,
-            // Add stock symbol as part of the date for identification
             date: `${stock.symbol}_${point.date || point.timestamp || index}`,
-          };
-          allStockData.push(normalizedPoint);
+            close: point.close,
+            open: point.open,
+            high: point.high,
+            low: point.low,
+            volume: point.volume,
+          });
         });
+
+        stockSymbols.push(stock.symbol);
       }
-    }
+    });
 
     return {
-      symbol: stockSymbols.join(','), // Store all symbols
+      symbol: stockSymbols.join(','),
       range: this.selectedTimeRange,
-      count: allStockData.length,
-      data: allStockData,
+      count: allData.length,
+      data: allData,
     };
   }
 
