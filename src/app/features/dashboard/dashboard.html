@@ -337,10 +337,13 @@
 
         <!-- Chart View -->
         <!-- Use property binding like analytics does, not method calls -->
-        <mat-card *ngIf="combinedChartData" class="chart-card combined-chart">
+        <mat-card
+          *ngIf="viewMode === 'chart' && combinedChartData"
+          class="chart-card combined-chart"
+        >
           <mat-card-header>
             <mat-card-title>
-              Combined Performance - {{ currentRibbon.name }}
+              Combined Performance
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>

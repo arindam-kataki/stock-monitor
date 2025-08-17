@@ -260,14 +260,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadChartDataForStocks(): void {
+    console.log('loadChartDataForStocks called');
+
+    if (this.selectedStocks.length === 0) {
+      this.combinedChartData = null;
+      return;
+    }
+
+    let loadedCount = 0;
+    const totalStocks = this.selectedStocks.length;
+
     this.selectedStocks.forEach((stock) => {
       this.stockDataService
         .getChartData(stock.symbol, this.selectedTimeRange)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (data) => {
+            console.log(`Loaded chart data for ${stock.symbol}`);
             this.stockChartData.set(stock.symbol, data);
             this.updateStockPriceFromChart(stock, data);
+
+            loadedCount++;
+            console.log(
+              `Progress: ${loadedCount}/${totalStocks} stocks loaded`
+            );
+
+            // When all stocks are loaded, update combined chart
+            if (loadedCount === totalStocks) {
+              console.log('All chart data loaded, updating combined chart');
+              this.updateCombinedChartData();
+              this.calculateStatistics();
+            }
           },
           error: (error) => {
             console.error(
@@ -293,6 +316,78 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       stock.volume = latestData.volume;
     }
+  }
+
+  // ============= AGGREGATION ==============
+
+  // Add this method to aggregate data to weekly points
+  private aggregateToWeekly(data: ChartDataPoint[]): ChartDataPoint[] {
+    if (data.length === 0) return [];
+
+    // Helper function to safely get date
+    const getPointDate = (point: ChartDataPoint): Date => {
+      if (point.date) {
+        return new Date(point.date);
+      } else if (point.timestamp) {
+        return new Date(point.timestamp);
+      } else {
+        // This shouldn't happen with real data, but satisfies TypeScript
+        console.warn('Data point missing both date and timestamp');
+        return new Date();
+      }
+    };
+
+    const weeklyData: ChartDataPoint[] = [];
+    let currentWeek: ChartDataPoint[] = [];
+    let currentWeekStart = getPointDate(data[0]);
+    currentWeekStart.setDate(
+      currentWeekStart.getDate() - currentWeekStart.getDay()
+    );
+
+    data.forEach((point) => {
+      const pointDate = getPointDate(point);
+      const weekStart = new Date(pointDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+      // Check if this point belongs to a new week
+      if (
+        weekStart.getTime() !== currentWeekStart.getTime() &&
+        currentWeek.length > 0
+      ) {
+        // Aggregate the current week's data
+        weeklyData.push(this.createWeeklyCandle(currentWeek));
+        currentWeek = [];
+        currentWeekStart = weekStart;
+      }
+
+      currentWeek.push(point);
+    });
+
+    // Don't forget the last week
+    if (currentWeek.length > 0) {
+      weeklyData.push(this.createWeeklyCandle(currentWeek));
+    }
+
+    console.log(
+      `Aggregated ${data.length} daily points to ${weeklyData.length} weekly points`
+    );
+    return weeklyData;
+  }
+
+  // Also update createWeeklyCandle to handle undefined values
+  private createWeeklyCandle(weekData: ChartDataPoint[]): ChartDataPoint {
+    const firstDay = weekData[0];
+    const lastDay = weekData[weekData.length - 1];
+
+    return {
+      date: firstDay.date,// || new Date().toISOString(), // Provide default
+      timestamp: firstDay.timestamp,// || Date.now(), // Provide default
+      open: firstDay.open,
+      close: lastDay.close,
+      high: Math.max(...weekData.map((d) => d.high)),
+      low: Math.min(...weekData.map((d) => d.low)),
+      volume: weekData.reduce((sum, d) => sum + d.volume, 0),
+    };
   }
 
   // ============== AUTO-CYCLE ==============
@@ -512,6 +607,101 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private updateCombinedChartData(): void {
     console.log('=== updateCombinedChartData START ===');
+
+    this.combinedLabels = [];
+    this.combinedDatasets = [];
+
+    if (!this.allStocksHaveData) {
+      console.log('Not all stocks have data yet');
+      this.combinedChartData = null;
+      return;
+    }
+
+    // Determine if we should sample the data
+    const shouldSample = ['3M', '6M', '1Y'].includes(this.selectedTimeRange);
+
+    // Get and process first stock's data for labels
+    const firstStock = this.selectedStocks[0];
+    const firstData = this.stockChartData.get(firstStock.symbol);
+
+    if (firstData && firstData.data && firstData.data.length > 0) {
+      // Sample to weekly if needed
+      const processedData = shouldSample
+        ? this.aggregateToWeekly(firstData.data)
+        : firstData.data;
+
+      // Create labels from processed data
+      this.combinedLabels = processedData.map((point) =>
+        this.formatDateLabel(new Date(point.date || point.timestamp || ''))
+      );
+
+      console.log(
+        `Labels: ${firstData.data.length} daily → ${
+          this.combinedLabels.length
+        } ${shouldSample ? 'weekly' : 'daily'}`
+      );
+    }
+
+    // Create datasets for each stock
+    this.selectedStocks.forEach((stock, index) => {
+      const data = this.stockChartData.get(stock.symbol);
+
+      if (data && data.data && data.data.length > 0) {
+        // Sample to weekly if needed
+        const processedData = shouldSample
+          ? this.aggregateToWeekly(data.data)
+          : data.data;
+
+        const basePrice = processedData[0].close;
+
+        if (basePrice && basePrice > 0) {
+          const normalizedPrices = processedData.map(
+            (point) => ((point.close - basePrice) / basePrice) * 100
+          );
+
+          this.combinedDatasets.push({
+            label: stock.symbol,
+            data: normalizedPrices,
+            borderColor: this.getColorForIndex(index),
+            backgroundColor: this.getColorForIndex(index, 0.1),
+            borderWidth: 2,
+            tension: 0.1,
+            fill: false,
+            pointRadius: shouldSample ? 3 : 0, // Show points for weekly data
+            pointHoverRadius: 5,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+          });
+
+          console.log(
+            `${stock.symbol}: ${data.data.length} daily → ${
+              processedData.length
+            } ${shouldSample ? 'weekly' : 'daily'} points`
+          );
+        }
+      }
+    });
+
+    // Set the combined data
+    this.combinedChartData = {
+      symbol: 'combined',
+      range: this.selectedTimeRange,
+      count: this.combinedLabels.length,
+      data: [],
+      chartLabels: this.combinedLabels,
+      chartDatasets: this.combinedDatasets,
+    };
+
+    console.log('=== updateCombinedChartData COMPLETE ===', {
+      timeRange: this.selectedTimeRange,
+      sampled: shouldSample,
+      labels: this.combinedLabels.length,
+      datasets: this.combinedDatasets.length,
+    });
+  }
+
+  private _updateCombinedChartData(): void {
+    console.log('=== updateCombinedChartData START ===');
     console.log('selectedStocks:', this.selectedStocks);
     console.log('allStocksHaveData:', this.allStocksHaveData);
 
@@ -603,6 +793,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private formatDateLabel(date: Date): string {
+    const options: Intl.DateTimeFormatOptions = {};
+
+    switch (this.selectedTimeRange) {
+      case '1D':
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+        break;
+      case '5D':
+        options.weekday = 'short';
+        break;
+      case '1M':
+        options.month = 'short';
+        options.day = 'numeric';
+        break;
+      case '3M':
+      case '6M':
+        // For weekly aggregated data, show month and week
+        options.month = 'short';
+        options.day = 'numeric';
+        break;
+      case '1Y':
+        options.month = 'short';
+        options.year = '2-digit';
+        break;
+      default:
+        options.month = 'short';
+        options.year = '2-digit';
+    }
+
+    return date.toLocaleDateString('en-US', options);
+  }
+
+  private _formatDateLabel(date: Date): string {
     const options: Intl.DateTimeFormatOptions = {};
 
     switch (this.selectedTimeRange) {
