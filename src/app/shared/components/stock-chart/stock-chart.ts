@@ -88,26 +88,73 @@ export class StockChartComponent
   }
 
   private createChart(): void {
-    if (
-      !this.chartCanvas ||
-      !this.data ||
-      !this.data.data ||
-      this.data.data.length === 0
-    ) {
+    console.log('createChart called', {
+      hasCanvas: !!this.chartCanvas,
+      hasData: !!this.data,
+      dataLength: this.data?.data?.length,
+      isCombined: this.isCombinedChart(),
+    });
+
+    if (!this.chartCanvas || !this.data) {
+      console.warn('Missing canvas or data');
       return;
     }
 
+    // Different validation for combined vs single charts
+    if (this.isCombinedChart()) {
+      const combinedData = this.data as CombinedChartData;
+      console.log('Combined chart data:', {
+        hasChartLabels: !!combinedData.chartLabels,
+        hasChartDatasets: !!combinedData.chartDatasets,
+        labelsLength: combinedData.chartLabels?.length,
+        datasetsLength: combinedData.chartDatasets?.length,
+      });
+
+      // Combined charts don't use data.data, they use chartLabels and chartDatasets
+      if (
+        !combinedData.chartLabels ||
+        !combinedData.chartDatasets ||
+        combinedData.chartDatasets.length === 0
+      ) {
+        console.warn('Combined chart missing labels or datasets');
+        return;
+      }
+      // Continue to create the chart - don't return here!
+    } else {
+      // Single chart validation - only check data.data for non-combined charts
+      if (!this.data.data || this.data.data.length === 0) {
+        console.warn('Single chart missing data');
+        return;
+      }
+    }
+
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('Could not get 2D context');
+      return;
+    }
 
     const chartData = this.prepareChartData();
-    const chartOptions = this.getChartOptions();
+    console.log('Prepared chart data:', chartData);
 
-    this.chart = new Chart(ctx, {
-      type: 'line',
-      data: chartData,
-      options: chartOptions,
-    });
+    const chartOptions = this.getChartOptions();
+    console.log('Chart options:', chartOptions);
+
+    // Destroy existing chart if it exists
+    if (this.chart) {
+      this.chart.destroy();
+    }
+
+    try {
+      this.chart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: chartOptions,
+      });
+      console.log('Chart created successfully');
+    } catch (error) {
+      console.error('Error creating chart:', error);
+    }
   }
 
   private updateChart(): void {

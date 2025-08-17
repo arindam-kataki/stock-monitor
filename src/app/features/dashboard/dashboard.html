@@ -336,27 +336,26 @@
         </div>
 
         <!-- Chart View -->
-        <div class="stock-chart-view" *ngIf="viewMode === 'chart'">
-          <mat-card class="full-chart-card">
-            <mat-card-header>
-              <mat-card-title>
-                Combined Performance - {{ currentRibbon.name }}
-              </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="chart-container">
-                <app-stock-chart
-                  [symbol]="'combined'"
-                  [data]="getCombinedChartData()"
-                  [timeRange]="selectedTimeRange"
-                  [showVolume]="settings.showVolume"
-                  [height]="400"
-                  [stocks]="selectedStocks"
-                ></app-stock-chart>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
+        <!-- Use property binding like analytics does, not method calls -->
+        <mat-card *ngIf="combinedChartData" class="chart-card combined-chart">
+          <mat-card-header>
+            <mat-card-title>
+              Combined Performance - {{ currentRibbon.name }}
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container" style="height: 400px">
+              <app-stock-chart
+                [symbol]="'combined'"
+                [data]="combinedChartData"
+                [timeRange]="selectedTimeRange"
+                [showVolume]="false"
+                [height]="400"
+                [stocks]="selectedStocks"
+              ></app-stock-chart>
+            </div>
+          </mat-card-content>
+        </mat-card>
 
         <!-- No Stocks Message -->
         <div *ngIf="selectedStocks.length === 0" class="no-stocks">

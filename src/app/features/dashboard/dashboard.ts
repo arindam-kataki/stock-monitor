@@ -127,6 +127,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     'actions',
   ];
 
+  combinedChartData: CombinedChartData | null = null; // Like analytics' normalizedData
+  private combinedLabels: string[] = []; // Like analytics' chartLabels
+  private combinedDatasets: any[] = [];
+
   constructor(
     private stockDataService: StockDataService,
     private settingsService: SettingsService,
@@ -506,58 +510,82 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return chartData.data[chartData.data.length - 1].volume;
   }
 
-  // In dashboard.ts, update the getCombinedChartData method:
+  private updateCombinedChartData(): void {
+    console.log('=== updateCombinedChartData START ===');
+    console.log('selectedStocks:', this.selectedStocks);
+    console.log('allStocksHaveData:', this.allStocksHaveData);
 
-  getCombinedChartData(): ChartData | CombinedChartData {
-    // Change return type to 'any' for now
-    // Create a proper multi-line chart data structure
-    const datasets: any[] = [];
-    let commonLabels: string[] = [];
+    // Check what data we have
+    this.selectedStocks.forEach((stock) => {
+      const data = this.stockChartData.get(stock.symbol);
+      console.log(`Stock ${stock.symbol} data:`, {
+        hasData: !!data,
+        dataLength: data?.data?.length,
+      });
+    });
 
-    // Find the common timeline (use the first stock's dates as reference)
-    const firstStock = this.selectedStocks[0];
-    if (firstStock) {
-      const firstData = this.stockChartData.get(firstStock.symbol);
-      if (firstData && firstData.data) {
-        commonLabels = firstData.data.map((point) =>
-          this.formatDateLabel(new Date(point.date || point.timestamp || ''))
-        );
-      }
+    // Reset data (like analytics does)
+    this.combinedLabels = [];
+    this.combinedDatasets = [];
+
+    if (this.selectedStocks.length === 0 || !this.allStocksHaveData) {
+      this.combinedChartData = null;
+      return;
     }
 
-    // Create a dataset for each stock
+    console.log('Updating combined chart data');
+
+    // Get labels from first stock
+    const firstStock = this.selectedStocks[0];
+    const firstData = this.stockChartData.get(firstStock.symbol);
+
+    if (firstData && firstData.data && firstData.data.length > 0) {
+      this.combinedLabels = firstData.data.map((point) =>
+        this.formatDateLabel(new Date(point.date || point.timestamp || ''))
+      );
+    }
+
+    // Create datasets (like analytics does)
     this.selectedStocks.forEach((stock, index) => {
       const data = this.stockChartData.get(stock.symbol);
-      if (data && data.data) {
-        // Normalize prices to percentage change from start
-        const basePrice = data.data[0].close;
-        const normalizedPrices = data.data.map(
-          (point) => ((point.close - basePrice) / basePrice) * 100
-        );
 
-        datasets.push({
-          label: stock.symbol,
-          data: normalizedPrices,
-          borderColor: this.getColorForIndex(index),
-          backgroundColor: this.getColorForIndex(index, 0.1),
-          borderWidth: 2,
-          tension: 0.1,
-          fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-        });
+      if (data && data.data && data.data.length > 0) {
+        const basePrice = data.data[0].close;
+
+        if (basePrice && basePrice > 0) {
+          const normalizedPrices = data.data.map(
+            (point) => ((point.close - basePrice) / basePrice) * 100
+          );
+
+          this.combinedDatasets.push({
+            label: stock.symbol,
+            data: normalizedPrices,
+            borderColor: this.getColorForIndex(index),
+            backgroundColor: this.getColorForIndex(index, 0.1),
+            borderWidth: 2,
+            tension: 0.1,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          });
+        }
       }
     });
 
-    // Return a custom structure that the chart component will understand
-    return {
+    // Set the combined data property (like analytics sets normalizedData)
+    this.combinedChartData = {
       symbol: 'combined',
       range: this.selectedTimeRange,
-      count: commonLabels.length,
-      data: [], // Keep for compatibility
-      chartLabels: commonLabels, // Changed from 'labels'
-      chartDatasets: datasets, // Changed from 'datasets'
+      count: this.combinedLabels.length,
+      data: [],
+      chartLabels: this.combinedLabels,
+      chartDatasets: this.combinedDatasets,
     };
+
+    console.log('Combined chart data updated:', {
+      labelsCount: this.combinedLabels.length,
+      datasetsCount: this.combinedDatasets.length,
+    });
   }
 
   private getColorForIndex(index: number, alpha: number = 1): string {
