@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
-import { ChartData, TimeRange } from '../../../core/models/stock.models';
+import { ChartData, CombinedChartData, TimeRange } from '../../../core/models/stock.models';
 import { Stock } from '../../../core/models/stock.models';
 
 // Register Chart.js components
@@ -31,7 +31,7 @@ export class StockChartComponent
   @ViewChild('chartCanvas') chartCanvas!: ElementRef<HTMLCanvasElement>;
 
   @Input() symbol: string = '';
-  @Input() data?: ChartData;
+  @Input() data?: ChartData | CombinedChartData;
   @Input() timeRange: TimeRange = '1D';
   @Input() showVolume: boolean = true;
   @Input() height: number = 300;

@@ -190,3 +190,12 @@ export interface ExportConfig {
   exportDate: string;
   version?: string;
 }
+
+export interface CombinedChartData {
+  symbol: string;
+  range: TimeRange;
+  count: number;
+  data: ChartDataPoint[]; // Keep for compatibility
+  chartLabels?: string[]; // For combined charts
+  chartDatasets?: any[]; // For combined charts
+}

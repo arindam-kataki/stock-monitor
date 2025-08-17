@@ -38,6 +38,7 @@ import {
   ChartData,
   ChartDataPoint,
   TimeRange,
+  CombinedChartData,
 } from '../../core/models/stock.models';
 
 // Chart Component
@@ -505,39 +506,102 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return chartData.data[chartData.data.length - 1].volume;
   }
 
-  getCombinedChartData(): ChartData {
-    const allData: ChartDataPoint[] = [];
-    const stockSymbols: string[] = [];
+  // In dashboard.ts, update the getCombinedChartData method:
 
-    // Combine all stock data with normalized values
-    this.selectedStocks.forEach((stock) => {
-      const stockData = this.stockChartData.get(stock.symbol);
-      if (stockData && stockData.data) {
-        const basePrice = stockData.data[0].close;
+  getCombinedChartData(): ChartData | CombinedChartData {
+    // Change return type to 'any' for now
+    // Create a proper multi-line chart data structure
+    const datasets: any[] = [];
+    let commonLabels: string[] = [];
 
-        stockData.data.forEach((point, index) => {
-          // Create a combined data point with stock symbol prefix
-          allData.push({
-            ...point,
-            date: `${stock.symbol}_${point.date || point.timestamp || index}`,
-            close: point.close,
-            open: point.open,
-            high: point.high,
-            low: point.low,
-            volume: point.volume,
-          });
+    // Find the common timeline (use the first stock's dates as reference)
+    const firstStock = this.selectedStocks[0];
+    if (firstStock) {
+      const firstData = this.stockChartData.get(firstStock.symbol);
+      if (firstData && firstData.data) {
+        commonLabels = firstData.data.map((point) =>
+          this.formatDateLabel(new Date(point.date || point.timestamp || ''))
+        );
+      }
+    }
+
+    // Create a dataset for each stock
+    this.selectedStocks.forEach((stock, index) => {
+      const data = this.stockChartData.get(stock.symbol);
+      if (data && data.data) {
+        // Normalize prices to percentage change from start
+        const basePrice = data.data[0].close;
+        const normalizedPrices = data.data.map(
+          (point) => ((point.close - basePrice) / basePrice) * 100
+        );
+
+        datasets.push({
+          label: stock.symbol,
+          data: normalizedPrices,
+          borderColor: this.getColorForIndex(index),
+          backgroundColor: this.getColorForIndex(index, 0.1),
+          borderWidth: 2,
+          tension: 0.1,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 4,
         });
-
-        stockSymbols.push(stock.symbol);
       }
     });
 
+    // Return a custom structure that the chart component will understand
     return {
-      symbol: stockSymbols.join(','),
+      symbol: 'combined',
       range: this.selectedTimeRange,
-      count: allData.length,
-      data: allData,
+      count: commonLabels.length,
+      data: [], // Keep for compatibility
+      chartLabels: commonLabels, // Changed from 'labels'
+      chartDatasets: datasets, // Changed from 'datasets'
     };
+  }
+
+  private getColorForIndex(index: number, alpha: number = 1): string {
+    const colors = [
+      `rgba(102, 126, 234, ${alpha})`,
+      `rgba(240, 147, 251, ${alpha})`,
+      `rgba(79, 172, 254, ${alpha})`,
+      `rgba(0, 242, 254, ${alpha})`,
+      `rgba(67, 233, 123, ${alpha})`,
+      `rgba(250, 112, 154, ${alpha})`,
+      `rgba(254, 225, 64, ${alpha})`,
+      `rgba(48, 207, 208, ${alpha})`,
+    ];
+    return colors[index % colors.length];
+  }
+
+  private formatDateLabel(date: Date): string {
+    const options: Intl.DateTimeFormatOptions = {};
+
+    switch (this.selectedTimeRange) {
+      case '1D':
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+        break;
+      case '5D':
+        options.weekday = 'short';
+        break;
+      case '1M':
+        options.month = 'short';
+        options.day = 'numeric';
+        break;
+      default:
+        options.month = 'short';
+        options.year = '2-digit';
+    }
+
+    return date.toLocaleDateString('en-US', options);
+  }
+
+  get allStocksHaveData(): boolean {
+    return this.selectedStocks.every((stock) => {
+      const chartData = this.stockChartData.get(stock.symbol);
+      return chartData && chartData.data && chartData.data.length > 0;
+    });
   }
 
   // ============== STATISTICS ==============
