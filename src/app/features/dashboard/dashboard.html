@@ -109,20 +109,67 @@
 
         <!-- View Mode & Actions -->
         <div class="nav-actions">
-          <mat-button-toggle-group
-            [(ngModel)]="viewMode"
-            class="view-mode-toggle"
-          >
-            <mat-button-toggle value="grid" matTooltip="Grid view">
-              <mat-icon>grid_view</mat-icon>
-            </mat-button-toggle>
-            <mat-button-toggle value="list" matTooltip="List view">
-              <mat-icon>view_list</mat-icon>
-            </mat-button-toggle>
-            <mat-button-toggle value="chart" matTooltip="Chart view">
-              <mat-icon>show_chart</mat-icon>
-            </mat-button-toggle>
-          </mat-button-toggle-group>
+          <!-- View Mode Dropdown - label to the LEFT -->
+          <div class="control-group view-control">
+            <label>View:</label>
+            <mat-form-field appearance="outline" class="view-select-field">
+              <mat-select [(ngModel)]="viewMode">
+                <mat-option value="grid">
+                  <mat-icon>grid_view</mat-icon>
+                  Grid View
+                </mat-option>
+                <mat-option value="list">
+                  <mat-icon>view_list</mat-icon>
+                  List View
+                </mat-option>
+                <mat-option value="chart">
+                  <mat-icon>show_chart</mat-icon>
+                  Chart View
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <!-- Add to dashboard.html in the nav-actions section -->
+          <div class="control-group sort-control">
+            <label>Sort:</label>
+            <mat-form-field appearance="outline" class="sort-select-field">
+              <mat-select [(ngModel)]="sortBy" (selectionChange)="sortStocks()">
+                <mat-option value="symbol-asc">
+                  <mat-icon>sort_by_alpha</mat-icon>
+                  Symbol (A-Z)
+                </mat-option>
+                <mat-option value="symbol-desc">
+                  <mat-icon>sort_by_alpha</mat-icon>
+                  Symbol (Z-A)
+                </mat-option>
+                <mat-option value="price-high">
+                  <mat-icon>arrow_upward</mat-icon>
+                  Price (High to Low)
+                </mat-option>
+                <mat-option value="price-low">
+                  <mat-icon>arrow_downward</mat-icon>
+                  Price (Low to High)
+                </mat-option>
+                <mat-option value="change-best">
+                  <mat-icon>trending_up</mat-icon>
+                  Best Performers
+                </mat-option>
+                <mat-option value="change-worst">
+                  <mat-icon>trending_down</mat-icon>
+                  Worst Performers
+                </mat-option>
+                <mat-option value="volume-high">
+                  <mat-icon>bar_chart</mat-icon>
+                  Volume (High to Low)
+                </mat-option>
+                <mat-option value="volume-low">
+                  <mat-icon>bar_chart</mat-icon>
+                  Volume (Low to High)
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
 
           <button
             mat-icon-button
@@ -130,14 +177,6 @@
             matTooltip="Refresh data"
           >
             <mat-icon>refresh</mat-icon>
-          </button>
-
-          <button
-            mat-icon-button
-            routerLink="/display"
-            matTooltip="Display settings"
-          >
-            <mat-icon>settings</mat-icon>
           </button>
         </div>
       </div>

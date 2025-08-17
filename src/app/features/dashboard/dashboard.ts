@@ -21,6 +21,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatTableModule } from '@angular/material/table';
+import { MatSelectModule } from '@angular/material/select';
 
 // Services and Models
 import { StockDataService } from '../../core/services/stock-data/stock-data.service';
@@ -61,6 +62,7 @@ import { StockChartComponent } from '../../shared/components/stock-chart/stock-c
     MatMenuModule,
     MatSlideToggleModule,
     MatSliderModule,
+    MatSelectModule,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -109,6 +111,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   averageChange = 0;
   topGainer: Stock | null = null;
   topLoser: Stock | null = null;
+
+  sortBy: string = 'symbol-asc';
 
   isDropdownOpen = false;
   displayedColumns: string[] = [
@@ -390,6 +394,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   setViewMode(mode: 'grid' | 'list' | 'chart'): void {
     this.viewMode = mode;
+  }
+
+  sortStocks(): void {
+    const [field, direction] = this.sortBy.split('-');
+
+    this.selectedStocks.sort((a, b) => {
+      let compareValue = 0;
+
+      switch (field) {
+        case 'symbol':
+          compareValue = a.symbol.localeCompare(b.symbol);
+          break;
+        case 'price':
+          compareValue = (a.price || 0) - (b.price || 0);
+          break;
+        case 'change':
+          compareValue = (a.changePercent || 0) - (b.changePercent || 0);
+          break;
+        case 'volume':
+          compareValue = (a.volume || 0) - (b.volume || 0);
+          break;
+      }
+
+      return direction === 'desc' ||
+        direction === 'worst' ||
+        direction === 'low'
+        ? -compareValue
+        : compareValue;
+    });
   }
 
   // ============== REAL-TIME UPDATES ==============

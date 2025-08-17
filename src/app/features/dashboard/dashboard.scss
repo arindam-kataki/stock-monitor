@@ -613,3 +613,334 @@
     }
   }
 }
+
+// Add to dashboard.scss in the .watch-navigation section:
+
+// Update the control-group styling in dashboard.scss:
+
+.watch-navigation {
+  // ... existing styles ...
+
+  // Control group - HORIZONTAL layout with label to the left
+  .control-group.view-control {
+    display: flex;
+    flex-direction: row; // Change from column to row
+    align-items: center; // Center vertically
+    gap: 8px;
+    flex: 0 0 auto;
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+      white-space: nowrap;
+      line-height: 36px; // Match dropdown height
+    }
+
+    // Form field styling
+    .view-select-field,
+    .sort-select-field {
+      min-width: 140px;
+      width: auto;
+
+      ::ng-deep {
+        .mat-mdc-text-field-wrapper {
+          background-color: white;
+        }
+
+        .mat-mdc-form-field-flex {
+          height: 36px;
+        }
+
+        .mat-mdc-form-field-infix {
+          padding: 0 12px;
+          min-height: 36px;
+          border: none;
+        }
+
+        .mat-mdc-select-trigger {
+          display: flex;
+          align-items: center;
+          height: 36px;
+        }
+
+        .mat-mdc-select-value {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            margin-right: 4px;
+          }
+        }
+
+        .mat-mdc-select-arrow-wrapper {
+          height: 24px;
+          padding-right: 4px;
+        }
+
+        // Outline appearance
+        .mdc-notched-outline {
+          .mdc-notched-outline__leading,
+          .mdc-notched-outline__notch,
+          .mdc-notched-outline__trailing {
+            border-color: #e0e0e0;
+            border-width: 1px;
+          }
+        }
+
+        // Hover state
+        &:hover .mdc-notched-outline {
+          .mdc-notched-outline__leading,
+          .mdc-notched-outline__notch,
+          .mdc-notched-outline__trailing {
+            border-color: #667eea;
+          }
+        }
+
+        // Focused state
+        &.mat-focused .mdc-notched-outline {
+          .mdc-notched-outline__leading,
+          .mdc-notched-outline__notch,
+          .mdc-notched-outline__trailing {
+            border-color: #667eea;
+            border-width: 2px;
+          }
+        }
+
+        // Remove extra padding/margins
+        .mat-mdc-form-field-subscript-wrapper {
+          display: none;
+        }
+      }
+    }
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center; // Center align with dropdown
+    gap: 10px;
+    flex: 0 0 auto;
+  }
+}
+
+// Style the dropdown panel options
+::ng-deep {
+  .mat-mdc-select-panel {
+    .mat-mdc-option {
+      .mdc-list-item__primary-text {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+}
+
+// List View - Enhanced styling with SAME FONT SIZE for all columns
+.stock-list-view {
+  .list-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+
+    mat-card-content {
+      padding: 0;
+    }
+  }
+
+  .stock-table {
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+
+    // Header styling
+    .mat-mdc-header-row {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border-bottom: 2px solid #e0e0e0;
+
+      th {
+        font-size: 12px;
+        font-weight: 700;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 16px;
+      }
+    }
+
+    // Row styling
+    .mat-mdc-row {
+      transition: all 0.3s ease;
+      border-bottom: 1px solid #f0f0f0;
+
+      &:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #f5f7ff 100%);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        transform: translateX(4px);
+      }
+
+      td {
+        padding: 16px;
+        font-size: 16px; // SAME SIZE for all columns
+        font-family: inherit;
+
+        // Symbol column - bold with gradient color
+        &:first-child {
+          strong {
+            font-size: 14px; // SAME SIZE
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+        }
+
+        // Name column
+        &:nth-child(2) {
+          color: #666;
+          font-weight: 500;
+          font-size: 16px; // SAME SIZE
+        }
+
+        // Price column
+        &:nth-child(3) {
+          font-size: 16px; // SAME SIZE
+          font-weight: 600;
+          color: #2c3e50;
+          font-variant-numeric: tabular-nums;
+        }
+
+        // Change column - same size, different colors
+        &:nth-child(4) {
+          font-weight: 600;
+          font-size: 16px; // SAME SIZE
+          font-variant-numeric: tabular-nums;
+
+          &.positive,
+          &.negative {
+            line-height: 24px;
+            align-items: center;
+            gap: 6px;
+
+            .trend-icon {
+              font-size: 18px; // Icon can be slightly larger
+              animation: pulse 2s infinite;
+            }
+          }
+
+          &.positive {
+            color: #28a745;
+
+            .trend-icon {
+              color: #28a745;
+              transform: translateY(-2px);
+            }
+          }
+
+          &.negative {
+            color: #dc3545;
+
+            .trend-icon {
+              color: #dc3545;
+              transform: translateY(2px);
+            }
+          }
+        }
+
+        // Volume column
+        &:nth-child(5) {
+          color: #6c757d;
+          font-size: 16px; // SAME SIZE
+          font-weight: 500;
+          font-variant-numeric: tabular-nums;
+        }
+
+        // Actions column
+        &:last-child {
+          button {
+            transition: all 0.3s;
+
+            &:hover {
+              transform: scale(1.1);
+              background: rgba(102, 126, 234, 0.1);
+
+              mat-icon {
+                color: #667eea;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Animation
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Shimmer effect
+  .list-card {
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(102, 126, 234, 0.03),
+        transparent
+      );
+      animation: shimmer 3s infinite;
+      pointer-events: none;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%) translateY(-100%);
+    }
+    100% {
+      transform: translateX(100%) translateY(100%);
+    }
+  }
+}
+
+// Alternating row colors
+.stock-table {
+  .mat-mdc-row {
+    &:nth-child(even) {
+      background: rgba(248, 249, 250, 0.5);
+    }
+  }
+}
