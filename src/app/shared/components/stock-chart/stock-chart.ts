@@ -12,7 +12,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
-import { ChartData, CombinedChartData, TimeRange } from '../../../core/models/stock.models';
+import {
+  ChartData,
+  CombinedChartData,
+  TimeRange,
+} from '../../../core/models/stock.models';
 import { Stock } from '../../../core/models/stock.models';
 
 // Register Chart.js components
@@ -161,49 +165,136 @@ export class StockChartComponent
   }
 
   private prepareCombinedChartData(): any {
-    const datasets: any[] = [];
-    let labels: string[] = [];
+    // Check if we have the CombinedChartData structure with chartLabels and chartDatasets
+    const combinedData = this.data as CombinedChartData;
 
-    // Get labels from first stock's data
-    if (this.stocks.length > 0 && this.data) {
-      const firstStockData = this.data.data;
-      labels = firstStockData.map((point) => {
+    // First, check if we have the pre-processed combined data from dashboard
+    if (
+      combinedData &&
+      combinedData.chartLabels &&
+      combinedData.chartDatasets
+    ) {
+      // Directly use the pre-prepared data from getCombinedChartData()
+      return {
+        labels: combinedData.chartLabels,
+        datasets: combinedData.chartDatasets,
+      };
+    }
+
+    // Fallback: If we don't have pre-processed data, create it here
+    // This handles the case where stocks are passed but data isn't pre-processed
+    if (
+      this.stocks &&
+      this.stocks.length > 0 &&
+      this.data &&
+      this.data.data &&
+      this.data.data.length > 0
+    ) {
+      const datasets: any[] = [];
+      let labels: string[] = [];
+
+      // Create labels from the data points
+      labels = this.data.data.map((point) => {
         const date = new Date(point.date || point.timestamp || '');
         return this.formatDateLabel(date);
       });
+
+      // Create a normalized dataset for each stock
+      // Since all stocks share the same data array, we need to calculate normalized values
+      this.stocks.forEach((stock, index) => {
+        // For demonstration, we'll use the same data for all stocks
+        // In a real scenario, you'd need to separate the data per stock
+        const priceData = this.data!.data.map((point) => point.close);
+
+        // Normalize prices to percentage change from start
+        if (priceData.length > 0) {
+          const basePrice = priceData[0];
+          const normalizedPrices = priceData.map(
+            (price) => ((price - basePrice) / basePrice) * 100
+          );
+
+          datasets.push({
+            label: stock.symbol || `Stock ${index + 1}`,
+            data: normalizedPrices,
+            borderColor: this.getStockColor(index),
+            backgroundColor: this.getStockColor(index, 0.1),
+            borderWidth: 2,
+            tension: 0.1,
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointBorderWidth: 0,
+            pointHoverBorderWidth: 2,
+            pointHoverBorderColor: this.getStockColor(index),
+          });
+        }
+      });
+
+      return { labels, datasets };
     }
 
-    // Create normalized dataset for each stock
-    this.stocks.forEach((stock, index) => {
-      // Extract this stock's data from the combined data
-      const stockData =
-        this.data?.data.filter((point) =>
-          point.date?.startsWith(`${stock.symbol}_`)
-        ) || [];
+    // If no valid data structure is found, return empty chart data
+    console.warn('No valid data structure found for combined chart');
+    return { labels: [], datasets: [] };
+  }
 
-      if (stockData.length === 0) return;
+  // Helper method to get consistent colors for stocks
+  private getStockColor(index: number, alpha: number = 1): string {
+    // Use the existing colors array or define inline
+    const colors = [
+      `rgba(102, 126, 234, ${alpha})`, // Purple
+      `rgba(240, 147, 251, ${alpha})`, // Pink
+      `rgba(79, 172, 254, ${alpha})`, // Blue
+      `rgba(0, 242, 254, ${alpha})`, // Cyan
+      `rgba(67, 233, 123, ${alpha})`, // Green
+      `rgba(250, 112, 154, ${alpha})`, // Rose
+      `rgba(254, 225, 64, ${alpha})`, // Yellow
+      `rgba(48, 207, 208, ${alpha})`, // Teal
+      `rgba(168, 237, 234, ${alpha})`, // Light Teal
+      `rgba(254, 214, 227, ${alpha})`, // Light Pink
+      `rgba(255, 154, 158, ${alpha})`, // Coral
+      `rgba(254, 207, 239, ${alpha})`, // Light Purple
+    ];
 
-      // Normalize data to start at 100
-      const firstValue = stockData[0].close;
-      const normalizedData = stockData.map((point) => ({
-        x: point.date?.replace(`${stock.symbol}_`, ''),
-        y: (point.close / firstValue) * 100,
-      }));
+    return colors[index % colors.length];
+  }
 
-      datasets.push({
-        label: stock.symbol,
-        data: normalizedData.map((d) => d.y),
-        borderColor: this.colors[index % this.colors.length],
-        backgroundColor: this.colors[index % this.colors.length] + '20',
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        tension: 0.1,
-        fill: false,
-      });
-    });
+  // Add the formatDateLabel method if it doesn't exist
+  private _formatDateLabel(date: Date): string {
+    const options: Intl.DateTimeFormatOptions = {};
 
-    return { labels, datasets };
+    switch (this.timeRange) {
+      case '1D':
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+        break;
+      case '5D':
+        options.weekday = 'short';
+        options.hour = '2-digit';
+        break;
+      case '1M':
+        options.month = 'short';
+        options.day = 'numeric';
+        break;
+      case '3M':
+      case '6M':
+        options.month = 'short';
+        options.day = 'numeric';
+        break;
+      case '1Y':
+        options.month = 'short';
+        options.year = '2-digit';
+        break;
+      case '5Y':
+        options.year = 'numeric';
+        options.month = 'short';
+        break;
+      default:
+        options.month = 'short';
+        options.day = 'numeric';
+    }
+
+    return date.toLocaleDateString('en-US', options);
   }
 
   private getCombinedChartOptions(): any {
