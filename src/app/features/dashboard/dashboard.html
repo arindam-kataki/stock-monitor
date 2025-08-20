@@ -342,9 +342,7 @@
           class="chart-card combined-chart"
         >
           <mat-card-header>
-            <mat-card-title>
-              Combined Performance
-            </mat-card-title>
+            <mat-card-title> Combined Performance </mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="chart-container" style="height: 400px">
@@ -359,15 +357,6 @@
             </div>
           </mat-card-content>
         </mat-card>
-
-        <!-- No Stocks Message -->
-        <div *ngIf="selectedStocks.length === 0" class="no-stocks">
-          <mat-icon>info</mat-icon>
-          <p>No stocks selected for this watch</p>
-          <button mat-raised-button color="primary" routerLink="/configuration">
-            Configure Watches
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -470,19 +459,5 @@
         />
       </mat-slider>
     </div>
-  </div>
-
-  <mat-divider></mat-divider>
-
-  <!-- Footer Links -->
-  <div class="menu-footer">
-    <a mat-menu-item routerLink="/configuration">
-      <mat-icon>settings</mat-icon>
-      <span>Configure Watches</span>
-    </a>
-    <a mat-menu-item routerLink="/display">
-      <mat-icon>tune</mat-icon>
-      <span>Display Settings</span>
-    </a>
   </div>
 </mat-menu>

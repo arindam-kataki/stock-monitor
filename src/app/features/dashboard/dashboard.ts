@@ -380,8 +380,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const lastDay = weekData[weekData.length - 1];
 
     return {
-      date: firstDay.date,// || new Date().toISOString(), // Provide default
-      timestamp: firstDay.timestamp,// || Date.now(), // Provide default
+      date: firstDay.date, // || new Date().toISOString(), // Provide default
+      timestamp: firstDay.timestamp, // || Date.now(), // Provide default
       open: firstDay.open,
       close: lastDay.close,
       high: Math.max(...weekData.map((d) => d.high)),

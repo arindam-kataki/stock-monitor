@@ -27,8 +27,8 @@ export class ConfigurationService {
     `);
 
     return categories.map((category) => ({
-      ...category,
-      stocks: getCategoryStocks.all(category.id),
+      ...(category as any),
+      stocks: getCategoryStocks.all((category as any).id),
     }));
   }
 
@@ -84,7 +84,7 @@ export class ConfigurationService {
         WHERE user_id = ? AND category_id = ? AND symbol = ?
       `
         )
-        .run(!existing.selected, userId, categoryId, symbol);
+        .run(!(existing as any)?.selected, userId, categoryId, symbol);
     } else {
       // Create new selection
       return this.db
@@ -110,7 +110,7 @@ export class ConfigurationService {
 
     // Convert to object
     return rows.reduce((acc, row) => {
-      acc[row.key] = JSON.parse(row.value);
+      (acc as any)[(row as any).key] = JSON.parse((row as any).value);
       return acc;
     }, {} as any);
   }
