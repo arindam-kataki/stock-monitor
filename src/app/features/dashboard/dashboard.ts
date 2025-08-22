@@ -142,9 +142,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('DashboardComponent ngOnInit');
     this.loadSettings();
-    this.loadRibbons();
     this.loadCategories();
-    this.startRealtimeUpdates();
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.loadRibbons();
+      this.startRealtimeUpdates();
+    }, 0);
   }
 
   ngOnDestroy(): void {

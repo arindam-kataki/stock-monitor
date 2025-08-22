@@ -11,13 +11,13 @@
           Stock Watches
         </h2>
         <!-- Stats moved here -->
-        <div class="header-stats">
+        <mat-chip class="stats-chip">
           <span class="stat-value">{{ getActiveRibbonCount() }}</span>
           <span class="stat-label">active</span>
           <span class="separator">•</span>
           <span class="stat-value">{{ getTotalStockCount() }}</span>
           <span class="stat-label">stocks</span>
-        </div>
+        </mat-chip>
       </div>
       <p class="subtitle">Create and manage your custom stock watch lists</p>
     </div>
@@ -37,6 +37,8 @@
 
       <div class="divider"></div>
 
+      <!--
+
       <button
         mat-stroked-button
         (click)="exportConfiguration()"
@@ -54,7 +56,8 @@
         <mat-icon>upload</mat-icon>
         Import
       </button>
-    </div>
+
+    --></div>
   </div>
 
   <!-- Loading State -->

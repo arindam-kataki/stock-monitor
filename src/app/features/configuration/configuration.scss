@@ -748,6 +748,42 @@
         width: 36px;
         height: 36px;
       }
+
+      .stats-chip {
+          margin-left: 16px;
+          padding: 6px 14px;
+          height: 32px;
+          min-height: 32px;
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          font-size: 14px;
+          font-weight: normal;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.25);
+          }
+
+          .stat-value {
+            font-weight: 700;
+            font-size: 15px;
+            color: white;
+          }
+
+          .stat-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+          }
+
+          .separator {
+            color: rgba(255, 255, 255, 0.6);
+            margin: 0 2px;
+            font-size: 14px;
+          }
+        }
     }
 
     .subtitle {
@@ -943,6 +979,8 @@
           height: 28px;
         }
       }
+
+      
 
       .subtitle {
         margin-left: 0;
