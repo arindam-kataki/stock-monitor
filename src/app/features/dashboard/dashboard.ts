@@ -147,6 +147,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     console.log('DashboardComponent ngOnInit');
     this.loadSettings();
     this.loadCategories();
+
+    this.subscribeToRealPrices();
+    this.loadRealPrices();
+    this.startPriceRefresh();
   }
 
   ngAfterViewInit(): void {
@@ -173,6 +177,239 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // =============== YAHOO DATA ================
+
+  /**
+   * Update market statistics based on current stocks
+   */
+  updateMarketStats(): void {
+    if (this.selectedStocks.length === 0) {
+      this.totalMarketCap = 0;
+      this.averageChange = 0;
+      this.topGainer = null;
+      this.topLoser = null;
+      return;
+    }
+
+    // Calculate total market cap
+    this.totalMarketCap = this.selectedStocks.reduce((total, stock) => {
+      const marketCap = this.parseMarketCap(stock.marketCap);
+      return total + marketCap;
+    }, 0);
+
+    // Calculate average change
+    const totalChange = this.selectedStocks.reduce((sum, stock) => {
+      return sum + (stock.changePercent || 0);
+    }, 0);
+    this.averageChange = totalChange / this.selectedStocks.length;
+
+    // Find top gainer and loser
+    this.topGainer = this.selectedStocks.reduce(
+      (max, stock) =>
+        (stock.changePercent || 0) > (max?.changePercent || -Infinity)
+          ? stock
+          : max,
+      null as Stock | null
+    );
+
+    this.topLoser = this.selectedStocks.reduce(
+      (min, stock) =>
+        (stock.changePercent || 0) < (min?.changePercent || Infinity)
+          ? stock
+          : min,
+      null as Stock | null
+    );
+
+    console.log('Market stats updated:', {
+      totalMarketCap: this.totalMarketCap,
+      averageChange: this.averageChange,
+      topGainer: this.topGainer?.symbol,
+      topLoser: this.topLoser?.symbol,
+    });
+  }
+
+  /**
+   * Parse market cap string to number
+   */
+  private parseMarketCap(marketCapStr?: string): number {
+    if (!marketCapStr) return 0;
+
+    const multipliers: { [key: string]: number } = {
+      T: 1e12, // Trillion
+      B: 1e9, // Billion
+      M: 1e6, // Million
+      K: 1e3, // Thousand
+    };
+
+    // Handle formats like "1.5T", "850.3B", "45.2M"
+    const match = marketCapStr.match(/^([\d.]+)([TBMK])?$/i);
+    if (match) {
+      const value = parseFloat(match[1]);
+      const multiplier = multipliers[match[2]?.toUpperCase()] || 1;
+      return value * multiplier;
+    }
+
+    // Try to parse as regular number
+    const parsed = parseFloat(marketCapStr.replace(/[^0-9.-]/g, ''));
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  /**
+   * Subscribe to real prices observable
+   */
+  private subscribeToRealPrices(): void {
+    this.stockDataService.realPrices$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((prices) => {
+        this.realPrices = prices;
+        this.applyRealPricesToStocks();
+      });
+  }
+
+  /**
+   * Load real prices from database
+   */
+  loadRealPrices(): void {
+    this.stockDataService.loadRealPrices().subscribe({
+      next: (prices) => {
+        this.lastPriceUpdate = new Date();
+        console.log(`Loaded ${prices.length} real prices from database`);
+      },
+      error: (error) => {
+        console.error('Error loading real prices:', error);
+      },
+    });
+  }
+
+  /**
+   * Apply real prices to currently displayed stocks
+   */
+  private applyRealPricesToStocks(): void {
+    if (this.selectedStocks.length === 0) return;
+
+    let updated = false;
+    this.selectedStocks.forEach((stock) => {
+      const realPrice = this.realPrices.get(stock.symbol);
+      if (realPrice) {
+        // Update stock with real price data
+        stock.price = realPrice.price;
+        stock.change = realPrice.change;
+        stock.changePercent = realPrice.change_percent;
+        stock.volume = realPrice.volume;
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      // Trigger change detection
+      this.selectedStocks = [...this.selectedStocks];
+      this.updateMarketStats();
+    }
+  }
+
+  /**
+   * Fetch fresh prices for current category from Yahoo
+   */
+  fetchCategoryPrices(): void {
+    if (!this.currentRibbon || this.isFetchingPrices) {
+      return;
+    }
+
+    this.isFetchingPrices = true;
+    const categoryId = this.currentRibbon.categoryId || '';
+
+    if (!categoryId) {
+      console.error('No category ID found for current ribbon');
+      this.isFetchingPrices = false;
+      return;
+    }
+
+    this.stockDataService.fetchCategoryPrices(categoryId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.snackBar.open(`Updated ${response.fetched} stocks`, 'Close', {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
+        } else {
+          this.snackBar.open('Failed to fetch some prices', 'Close', {
+            duration: 3000,
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error fetching prices:', error);
+        this.snackBar.open('Error fetching prices', 'Close', {
+          duration: 3000,
+        });
+      },
+      complete: () => {
+        this.isFetchingPrices = false;
+      },
+    });
+  }
+
+  /**
+   * Get formatted last update text
+   */
+  getLastUpdateText(): string {
+    if (!this.lastPriceUpdate) {
+      return 'No prices loaded';
+    }
+
+    const now = new Date();
+    const diffSeconds = Math.floor(
+      (now.getTime() - this.lastPriceUpdate.getTime()) / 1000
+    );
+
+    if (diffSeconds < 60) {
+      return `Updated ${diffSeconds}s ago`;
+    } else if (diffSeconds < 3600) {
+      return `Updated ${Math.floor(diffSeconds / 60)}m ago`;
+    } else if (diffSeconds < 86400) {
+      return `Updated ${Math.floor(diffSeconds / 3600)}h ago`;
+    } else {
+      return `Updated ${Math.floor(diffSeconds / 86400)}d ago`;
+    }
+  }
+
+  /**
+   * Check if a stock has real price data
+   */
+  hasRealPrice(symbol: string): boolean {
+    return this.realPrices.has(symbol);
+  }
+
+  /**
+   * Start automatic price refresh
+   */
+  private startPriceRefresh(): void {
+    // Refresh every 30 seconds
+    interval(30000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (!this.isFetchingPrices) {
+          this.loadRealPrices();
+        }
+      });
+  }
+
+  /**
+   * Format market cap for display
+   */
+  formatMarketCap(value: number): string {
+    if (value >= 1e12) {
+      return `$${(value / 1e12).toFixed(2)}T`;
+    } else if (value >= 1e9) {
+      return `$${(value / 1e9).toFixed(2)}B`;
+    } else if (value >= 1e6) {
+      return `$${(value / 1e6).toFixed(2)}M`;
+    } else if (value >= 1e3) {
+      return `$${(value / 1e3).toFixed(2)}K`;
+    } else {
+      return `$${value.toFixed(2)}`;
+    }
+  }
 
   // ============== DATA LOADING ==============
 
@@ -902,7 +1139,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     );
   }
 
-  private parseMarketCap(marketCapStr?: string): number {
+  private _parseMarketCap(marketCapStr?: string): number {
     if (!marketCapStr) return 0;
 
     const multipliers: { [key: string]: number } = {
@@ -1023,7 +1260,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return volume.toString();
   }
 
-  formatMarketCap(marketCap?: string | number): string {
+  _formatMarketCap(marketCap?: string | number): string {
     if (typeof marketCap === 'string') return marketCap;
     if (!marketCap) return 'N/A';
 
