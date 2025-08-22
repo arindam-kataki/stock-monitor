@@ -131,6 +131,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private combinedLabels: string[] = []; // Like analytics' chartLabels
   private combinedDatasets: any[] = [];
 
+  realPrices: Map<string, any> = new Map();
+  isFetchingPrices = false;
+  lastPriceUpdate: Date | null = null;
+
   constructor(
     private stockDataService: StockDataService,
     private settingsService: SettingsService,
@@ -167,6 +171,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     return `${value}s`;
   }
+
+  // =============== YAHOO DATA ================
 
   // ============== DATA LOADING ==============
 

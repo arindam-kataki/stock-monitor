@@ -36,6 +36,10 @@ export class StockDataService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public loading$ = this.loadingSubject.asObservable();
 
+  // Add a subject to track real prices
+  private realPricesSubject = new BehaviorSubject<Map<string, any>>(new Map());
+  public realPrices$ = this.realPricesSubject.asObservable();
+
   constructor(private http: HttpClient) {
     this.loadCategories();
   }
@@ -252,6 +256,123 @@ export class StockDataService {
     if (!category) return [];
 
     return category.stocks.filter((stock) => selections.includes(stock.symbol));
+  }
+
+  // ===================== LIVE DATA =============
+
+  /**
+   * Load real prices from database
+   */
+  loadRealPrices(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/stocks/latest`).pipe(
+      tap((prices) => {
+        console.log(`Loaded ${prices.length} real prices from database`);
+
+        // Store in map for easy lookup
+        const priceMap = new Map<string, any>();
+        prices.forEach((price) => {
+          priceMap.set(price.symbol, price);
+        });
+        this.realPricesSubject.next(priceMap);
+
+        // Update categories with real prices
+        this.updateCategoriesWithRealPrices(prices);
+      }),
+      catchError((error) => {
+        console.error('Error loading real prices:', error);
+        return of([]);
+      })
+    );
+  }
+
+  /**
+   * Update category stocks with real prices
+   */
+  private updateCategoriesWithRealPrices(prices: any[]): void {
+    const categories = this.categoriesSubject.value;
+
+    categories.forEach((category) => {
+      category.stocks.forEach((stock) => {
+        const realPrice = prices.find((p) => p.symbol === stock.symbol);
+        if (realPrice) {
+          stock.price = realPrice.price;
+          stock.change = realPrice.change;
+          stock.changePercent = realPrice.change_percent;
+          stock.volume = realPrice.volume;
+        }
+      });
+    });
+
+    // Emit updated categories
+    this.categoriesSubject.next([...categories]);
+  }
+
+  /**
+   * Fetch fresh price for a single stock from Yahoo
+   */
+  fetchStockPrice(symbol: string): Observable<any> {
+    return this.http
+      .post<any>(`${this.apiUrl}/stocks/fetch/${symbol}`, {})
+      .pipe(
+        tap((response) => {
+          if (response.success) {
+            console.log(
+              `Fetched ${symbol}: $${response.data.regularMarketPrice}`
+            );
+            // Reload all prices after individual fetch
+            this.loadRealPrices().subscribe();
+          }
+        }),
+        catchError((error) => {
+          console.error(`Error fetching ${symbol}:`, error);
+          return of({ success: false, error: error.message });
+        })
+      );
+  }
+
+  /**
+   * Fetch all stocks in a category from Yahoo
+   */
+  fetchCategoryPrices(categoryId: string): Observable<any> {
+    return this.http
+      .post<any>(`${this.apiUrl}/stocks/fetch-category/${categoryId}`, {})
+      .pipe(
+        tap((response) => {
+          if (response.success) {
+            console.log(
+              `Fetched ${response.fetched} stocks for category ${response.category}`
+            );
+            // Reload all prices after category fetch
+            this.loadRealPrices().subscribe();
+          }
+        }),
+        catchError((error) => {
+          console.error('Error fetching category prices:', error);
+          return of({ success: false, error: error.message });
+        })
+      );
+  }
+
+  /**
+   * Get real price for a specific stock
+   */
+  getRealPrice(symbol: string): number | undefined {
+    const priceData = this.realPricesSubject.value.get(symbol);
+    return priceData?.price;
+  }
+
+  /**
+   * Check if we have real price for a stock
+   */
+  hasRealPrice(symbol: string): boolean {
+    return this.realPricesSubject.value.has(symbol);
+  }
+
+  /**
+   * Get all real prices as a map
+   */
+  getRealPricesMap(): Map<string, any> {
+    return this.realPricesSubject.value;
   }
 
   // ============== REAL-TIME PRICES ==============

@@ -9,20 +9,27 @@
     "build": "tsc",
     "seed": "ts-node src/seed/seedSQLite.ts",
     "clean:db": "rm -f data/stocks.db && npm run seed",
-    "test": "ts-node src/test/testSQLite.ts"
+    "test": "ts-node src/test/testSQLite.ts",
+    "fetch-test": "ts-node src/services/yahooService.ts",
+    "fetch-single": "ts-node -e \"import y from './src/services/yahooService'; y.testSingleStock('AAPL')\"",
+    "fetch-multiple": "ts-node -e \"import y from './src/services/yahooService'; y.testMultipleStocks()\"",
+    "fetch-historical": "ts-node -e \"import y from './src/services/yahooService'; y.testHistoricalData('AAPL')\""
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mongoose": "^8.0.0"
+    "mongoose": "^8.0.0",
+    "node-cron": "^4.2.1",
+    "yahoo-finance2": "^2.13.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.15",
     "@types/express": "^4.17.20",
     "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.11",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"

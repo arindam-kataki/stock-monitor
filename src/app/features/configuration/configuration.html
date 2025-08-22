@@ -8,16 +8,16 @@
       <div class="title-section">
         <h2>
           <mat-icon>visibility</mat-icon>
-          Stock Watches
+          <span>Stock Watches</span
+          ><!-- Stats moved here -->
+          <mat-chip class="stats-chip">
+            <span class="stat-value">{{ getActiveRibbonCount() }}</span>
+            <span class="stat-label">active</span>
+            <span class="separator">•</span>
+            <span class="stat-value">{{ getTotalStockCount() }}</span>
+            <span class="stat-label">stocks</span>
+          </mat-chip>
         </h2>
-        <!-- Stats moved here -->
-        <mat-chip class="stats-chip">
-          <span class="stat-value">{{ getActiveRibbonCount() }}</span>
-          <span class="stat-label">active</span>
-          <span class="separator">•</span>
-          <span class="stat-value">{{ getTotalStockCount() }}</span>
-          <span class="stat-label">stocks</span>
-        </mat-chip>
       </div>
       <p class="subtitle">Create and manage your custom stock watch lists</p>
     </div>
