@@ -4,7 +4,7 @@
   <canvas #chartCanvas></canvas>
 
   <!-- No data message -->
-  <div *ngIf="!data || !data.data || data.data.length === 0" class="no-data">
+  <div *ngIf="shouldShowNoDataMessage()" class="no-data">
     <span>No data available</span>
   </div>
 </div>

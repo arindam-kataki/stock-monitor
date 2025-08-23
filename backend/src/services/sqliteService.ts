@@ -422,6 +422,18 @@ export class StockDatabase {
           )
           .all(symbol);
 
+      case '3M':
+        return this.db
+          .prepare(
+            `
+          SELECT * FROM stocks_daily 
+          WHERE symbol = ? 
+            AND date >= date('now', '-3 months')
+          ORDER BY date ASC
+      `
+          )
+          .all(symbol);
+
       case '6M':
         return this.db
           .prepare(
@@ -663,7 +675,7 @@ export class StockDatabase {
   }
 
   // Create ribbon
-createRibbon(data: any): number {
+  createRibbon(data: any): number {
     const {
       userId = 'default',
       name,
@@ -737,7 +749,6 @@ createRibbon(data: any): number {
     return ribbonId;
   }
 
-
   // Add stock to ribbon
   addStockToRibbon(ribbonId: number, symbol: string): void {
     this.db
@@ -777,9 +788,15 @@ createRibbon(data: any): number {
   }
 
   // Update ribbon stocks
-  updateRibbonStocks(ribbonId: number, selectedStocks: string[], stockAlerts?: any[]): void {
+  updateRibbonStocks(
+    ribbonId: number,
+    selectedStocks: string[],
+    stockAlerts?: any[]
+  ): void {
     // Delete existing stocks
-    this.db.prepare('DELETE FROM ribbon_stocks WHERE ribbon_id = ?').run(ribbonId);
+    this.db
+      .prepare('DELETE FROM ribbon_stocks WHERE ribbon_id = ?')
+      .run(ribbonId);
 
     // Insert stocks with alerts
     const insertStmt = this.db.prepare(`

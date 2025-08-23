@@ -13,7 +13,10 @@
     "fetch-test": "ts-node src/services/yahooService.ts",
     "fetch-single": "ts-node -e \"import y from './src/services/yahooService'; y.testSingleStock('AAPL')\"",
     "fetch-multiple": "ts-node -e \"import y from './src/services/yahooService'; y.testMultipleStocks()\"",
-    "fetch-historical": "ts-node -e \"import y from './src/services/yahooService'; y.testHistoricalData('AAPL')\""
+    "fetch-historical": "ts-node -e \"import y from './src/services/yahooService'; y.testHistoricalData('AAPL')\"",
+    "data:init": "ts-node src/scripts/initial-data-load.ts",
+    "data:update": "ts-node src/scripts/realtime-updater.ts",
+    "setup": "npm run seed && npm run data:init"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

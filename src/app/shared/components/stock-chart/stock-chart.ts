@@ -285,6 +285,23 @@ export class StockChartComponent
     return { labels: [], datasets: [] };
   }
 
+  shouldShowNoDataMessage(): boolean {
+    // For combined charts, check chartLabels and chartDatasets
+    if (this.isCombinedChart()) {
+      const combinedData = this.data as CombinedChartData;
+      return (
+        !combinedData ||
+        !combinedData.chartLabels ||
+        combinedData.chartLabels.length === 0 ||
+        !combinedData.chartDatasets ||
+        combinedData.chartDatasets.length === 0
+      );
+    }
+
+    // For regular charts, check data.data
+    return !this.data || !this.data.data || this.data.data.length === 0;
+  }
+
   // Helper method to get consistent colors for stocks
   private getStockColor(index: number, alpha: number = 1): string {
     // Use the existing colors array or define inline
@@ -355,19 +372,86 @@ export class StockChartComponent
       plugins: {
         legend: {
           display: true,
-          position: 'bottom',
+          position: 'top', // Changed from 'bottom' to 'top'
+          align: 'start', // Align to the left
           labels: {
-            padding: 15,
-            usePointStyle: true,
+            padding: 20, // More padding between items
+
+            // Make the color box a rectangle
+            boxWidth: 30, // Wider rectangle (was default square)
+            boxHeight: 6, // Much shorter for rectangle appearance
+
             font: {
-              size: 12,
+              size: 13,
+              weight: '500',
+              family: "'Roboto', sans-serif",
+            },
+
+            color: '#333',
+
+            // Don't use point style - keep as rectangles
+            usePointStyle: false,
+
+            // Add hover effect
+            generateLabels: (chart: any) => {
+              const datasets = chart.data.datasets;
+              return datasets.map((dataset: any, i: number) => ({
+                text: dataset.label,
+                fillStyle: dataset.borderColor || dataset.backgroundColor,
+                strokeStyle: dataset.borderColor,
+                lineWidth: 0,
+                hidden: !chart.isDatasetVisible(i),
+                index: i,
+
+                // Additional properties for better appearance
+                fontColor: !chart.isDatasetVisible(i) ? '#ccc' : '#333',
+
+                // Custom properties
+                datasetIndex: i,
+              }));
             },
           },
+
+          // Add hover effects
+          onHover: (event: any, legendItem: any, legend: any) => {
+            if (event.native && event.native.target) {
+              event.native.target.style.cursor = 'pointer';
+            }
+          },
+          onLeave: (event: any, legendItem: any, legend: any) => {
+            if (event.native && event.native.target) {
+              event.native.target.style.cursor = 'default';
+            }
+          },
         },
+
         tooltip: {
           enabled: true,
           mode: 'index',
           intersect: false,
+
+          // Style the tooltip boxes as rectangles too
+          displayColors: true,
+          boxWidth: 20,
+          boxHeight: 4,
+          boxPadding: 4,
+
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          cornerRadius: 4,
+          padding: 12,
+
+          titleFont: {
+            size: 13,
+            weight: 'bold',
+          },
+          bodyFont: {
+            size: 12,
+          },
+
           callbacks: {
             label: (context: any) => {
               const value = context.parsed.y;
@@ -376,25 +460,42 @@ export class StockChartComponent
                 change >= 0
                   ? `+${change.toFixed(2)}%`
                   : `${change.toFixed(2)}%`;
-              return `${context.dataset.label}: ${value.toFixed(
-                2
-              )} (${changeStr})`;
+
+              // Add spacing for alignment
+              const label = context.dataset.label.padEnd(6);
+              return `${label}: ${value.toFixed(2)} (${changeStr})`;
+            },
+
+            // Customize the title to show the date/time nicely
+            title: (tooltipItems: any) => {
+              if (tooltipItems.length > 0) {
+                return tooltipItems[0].label;
+              }
+              return '';
             },
           },
         },
+
+        // Keep the baseline annotation
         annotation: {
           annotations: {
             baseline: {
               type: 'line',
               yMin: 100,
               yMax: 100,
-              borderColor: '#667eea',
+              borderColor: 'rgba(102, 126, 234, 0.3)',
               borderWidth: 1,
               borderDash: [5, 5],
               label: {
-                content: 'Baseline (100)',
+                content: 'Baseline',
                 enabled: true,
                 position: 'end',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                color: '#667eea',
+                font: {
+                  size: 11,
+                },
+                padding: 4,
               },
             },
           },
@@ -406,21 +507,31 @@ export class StockChartComponent
           grid: {
             display: false,
           },
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 8,
+          },
         },
         y: {
           display: true,
           position: 'left',
           grid: {
-            color: '#f0f0f0',
+            color: 'rgba(0, 0, 0, 0.05)',
           },
           ticks: {
             callback: function (value: any) {
-              return value.toFixed(0);
+              // Show as percentage change from baseline
+              const change = value - 100;
+              return change >= 0 ? `+${change}%` : `${change}%`;
             },
           },
           title: {
             display: true,
-            text: 'Normalized Value',
+            text: 'Change (%)',
+            font: {
+              size: 12,
+            },
           },
         },
       },

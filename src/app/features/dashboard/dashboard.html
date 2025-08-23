@@ -311,6 +311,21 @@
                   </td>
                 </ng-container>
 
+                <ng-container matColumnDef="trend">
+                  <th mat-header-cell *matHeaderCellDef>Trend</th>
+                  <td mat-cell *matCellDef="let stock">
+                    <div class="sparkline-container">
+                      <canvas
+                        #sparklineCanvas
+                        class="sparkline-canvas"
+                        width="100"
+                        height="35"
+                        [attr.data-symbol]="stock.symbol"
+                      ></canvas>
+                    </div>
+                  </td>
+                </ng-container>
+
                 <!-- Actions Column -->
                 <ng-container matColumnDef="actions">
                   <th mat-header-cell *matHeaderCellDef>Actions</th>
@@ -342,7 +357,16 @@
           class="chart-card combined-chart"
         >
           <mat-card-header>
-            <mat-card-title> Combined Performance </mat-card-title>
+            <div class="stock-header">
+              <!-- Use same class as grid view -->
+              <div class="stock-info">
+                <span class="stock-symbol">Combined Performance</span>
+                <span class="stock-name">All selected stocks normalized</span>
+              </div>
+              <span class="stock-price">
+                {{ selectedStocks.length }} stocks
+              </span>
+            </div>
           </mat-card-header>
           <mat-card-content>
             <div class="chart-container" style="height: 400px">

@@ -1,6 +1,12 @@
 // src/app/features/dashboard/dashboard.ts
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  QueryList,
+  ViewChildren,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, interval, Subscription } from 'rxjs';
@@ -24,6 +30,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { MatTableDataSource } from '@angular/material/table';
 
 // Services and Models
 import { StockDataService } from '../../core/services/stock-data/stock-data.service';
@@ -124,9 +131,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     'price',
     'change',
     'volume',
-    'actions',
+    'trend',
+  
   ];
 
+  stockDataSource = new MatTableDataSource<Stock>([]);
   combinedChartData: CombinedChartData | null = null; // Like analytics' normalizedData
   private combinedLabels: string[] = []; // Like analytics' chartLabels
   private combinedDatasets: any[] = [];
@@ -134,6 +143,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   realPrices: Map<string, any> = new Map();
   isFetchingPrices = false;
   lastPriceUpdate: Date | null = null;
+
+  @ViewChildren('sparklineCanvas') sparklineCanvases!: QueryList<
+    ElementRef<HTMLCanvasElement>
+  >;
 
   constructor(
     private stockDataService: StockDataService,
@@ -157,6 +170,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.loadRibbons();
       this.startRealtimeUpdates();
+      this.setupSparklineRendering();
     }, 0);
   }
 
@@ -174,6 +188,157 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
     }
     return `${value}s`;
+  }
+
+  // =============== SPARKLINES ================
+
+  private setupSparklineRendering(): void {
+
+    // Initial render after a delay to ensure data is loaded
+    setTimeout(() => {
+      this.renderAllSparklines();
+    }, 1000);
+
+    // Re-render when canvas elements change (e.g., switching to list view)
+    if (this.sparklineCanvases) {
+      this.sparklineCanvases.changes.subscribe(() => {
+        setTimeout(() => this.renderAllSparklines(), 100);
+      });
+    }
+  }
+
+  // Add method to render all sparklines
+  private renderAllSparklines(): void {
+    if (!this.sparklineCanvases) return;
+
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+      this.sparklineCanvases.forEach((canvasRef) => {
+        const canvas = canvasRef.nativeElement;
+        const symbol = canvas.getAttribute('data-symbol');
+        if (symbol) {
+          this.drawSparkline(canvas, symbol);
+        }
+      });
+    }, 100);
+  }
+
+  // Main sparkline drawing method
+  private drawSparkline(canvas: HTMLCanvasElement, symbol: string): void {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const chartData = this.getChartData(symbol);
+    if (!chartData || !chartData.data || chartData.data.length === 0) return;
+
+    // Get the last N points (adjust based on time range)
+    const pointsToShow = this.getSparklinePoints();
+    const data = chartData.data.slice(-pointsToShow);
+
+    if (data.length < 2) return;
+
+    // Extract prices
+    const prices = data.map((d) => d.close);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1;
+
+    // Canvas dimensions
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = 2;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Determine color based on trend
+    const isPositive = prices[prices.length - 1] >= prices[0];
+    const lineColor = isPositive ? '#28a745' : '#dc3545';
+
+    // Optional: Add a subtle gradient fill
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    if (isPositive) {
+      gradient.addColorStop(0, 'rgba(40, 167, 69, 0.1)');
+      gradient.addColorStop(1, 'rgba(40, 167, 69, 0)');
+    } else {
+      gradient.addColorStop(0, 'rgba(220, 53, 69, 0.1)');
+      gradient.addColorStop(1, 'rgba(220, 53, 69, 0)');
+    }
+
+    // Draw the area fill first
+    ctx.beginPath();
+    prices.forEach((price, i) => {
+      const x = padding + (i / (prices.length - 1)) * (width - 2 * padding);
+      const y = padding + (1 - (price - min) / range) * (height - 2 * padding);
+
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+
+    // Complete the fill area
+    ctx.lineTo(width - padding, height - padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Draw the line
+    ctx.beginPath();
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    prices.forEach((price, i) => {
+      const x = padding + (i / (prices.length - 1)) * (width - 2 * padding);
+      const y = padding + (1 - (price - min) / range) * (height - 2 * padding);
+
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+
+    // Optional: Add a dot for the last point
+    const lastX = width - padding;
+    const lastY =
+      padding +
+      (1 - (prices[prices.length - 1] - min) / range) * (height - 2 * padding);
+
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 2, 0, 2 * Math.PI);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+  }
+
+  // Helper method to determine number of points based on time range
+  private getSparklinePoints(): number {
+    switch (this.selectedTimeRange) {
+      case '1D':
+        return 20; // Show more detail for intraday
+      case '5D':
+        return 5; // One point per day
+      case '1M':
+        return 20; // ~1 point per trading day
+      case '3M':
+        return 15; // Weekly points
+      case '6M':
+        return 26; // Bi-weekly points
+      case '1Y':
+        return 52; // Weekly points
+      default:
+        return 20;
+    }
+  }
+
+  // Call this when data updates or time range changes
+  private refreshSparklines(): void {
+    this.renderAllSparklines();
   }
 
   // =============== YAHOO DATA ================
@@ -738,6 +903,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectTimeRange(range: TimeRange): void {
     this.selectedTimeRange = range;
     this.loadChartDataForStocks();
+    setTimeout(() => this.refreshSparklines(), 500);
   }
 
   // ============== VIEW MODE ==============
@@ -773,6 +939,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
         ? -compareValue
         : compareValue;
     });
+
+
+    if (this.stockDataSource) {
+      this.stockDataSource.data = [...this.selectedStocks];
+    }
+  
+    // If sparklines are visible, re-render them after sorting
+    if (this.viewMode === 'list') {
+      setTimeout(() => this.renderAllSparklines(), 100);
+    }
+
   }
 
   // ============== REAL-TIME UPDATES ==============
