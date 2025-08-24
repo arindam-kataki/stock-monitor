@@ -132,7 +132,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     'change',
     'volume',
     'trend',
-  
   ];
 
   stockDataSource = new MatTableDataSource<Stock>([]);
@@ -193,7 +192,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // =============== SPARKLINES ================
 
   private setupSparklineRendering(): void {
-
     // Initial render after a delay to ensure data is loaded
     setTimeout(() => {
       this.renderAllSparklines();
@@ -667,6 +665,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.calculateStatistics();
     } else {
       this.selectedStocks = [];
+      this.stockDataSource.data = [];
     }
 
     this.loading = false;
@@ -903,7 +902,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectTimeRange(range: TimeRange): void {
     this.selectedTimeRange = range;
     this.loadChartDataForStocks();
-    setTimeout(() => this.refreshSparklines(), 500);
+    // Update the data source to trigger change detection
+    this.stockDataSource.data = [...this.selectedStocks];
+
+    // Refresh sparklines for list view
+    if (this.viewMode === 'list') {
+      setTimeout(() => this.refreshSparklines(), 500);
+    }
   }
 
   // ============== VIEW MODE ==============
@@ -940,16 +945,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         : compareValue;
     });
 
-
     if (this.stockDataSource) {
       this.stockDataSource.data = [...this.selectedStocks];
     }
-  
+
     // If sparklines are visible, re-render them after sorting
     if (this.viewMode === 'list') {
       setTimeout(() => this.renderAllSparklines(), 100);
     }
-
   }
 
   // ============== REAL-TIME UPDATES ==============
