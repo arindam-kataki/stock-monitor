@@ -505,6 +505,9 @@
   box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
 
   .header-content {
+    display: flex; // ← THIS IS MISSING
+    align-items: center; // ← THIS IS MISSING
+    justify-content: space-between; // ← THIS IS MISSING
     h2 {
       font-size: 28px;
       font-weight: 600;

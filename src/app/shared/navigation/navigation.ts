@@ -32,12 +32,6 @@ export class NavigationComponent implements OnInit {
       description: 'Manage stock watches',
     },
     {
-      path: '/display',
-      label: 'Display',
-      icon: 'tune',
-      description: 'Display settings',
-    },
-    {
       path: '/dashboard',
       label: 'Dashboard',
       icon: 'dashboard',
@@ -48,6 +42,12 @@ export class NavigationComponent implements OnInit {
       label: 'Analytics',
       icon: 'analytics',
       description: 'Stock analytics',
+    },
+    {
+      path: '/display',
+      label: 'Display',
+      icon: 'tune',
+      description: 'Display settings',
     },
   ];
 

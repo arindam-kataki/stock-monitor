@@ -87,6 +87,12 @@
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+  pointer-events: none !important;
+  user-select: none !important;
+
+  * {
+    cursor: not-allowed !important;
+  }
 }
 
 // Settings card
@@ -471,5 +477,15 @@
     .action-buttons {
       background: #1e1e1e;
     }
+  }
+}
+
+// Add this to configuration.component.scss
+:host {
+  pointer-events: none !important;
+  user-select: none !important;
+
+  * {
+    cursor: not-allowed !important;
   }
 }

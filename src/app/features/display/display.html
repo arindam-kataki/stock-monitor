@@ -9,12 +9,12 @@
         Display Settings
       </h2>
       <p class="subtitle">
-        Configure how your stock watches are displayed and cycled
+        Configure how your stock watches are displayed and cycled (disabled)
       </p>
     </div>
 
     <!-- Header Actions -->
-    <div class="header-actions">
+    <div class="header-actions" style="display: none">
       <button
         mat-stroked-button
         (click)="exportSettings()"
@@ -75,7 +75,7 @@
             <mat-slide-toggle
               [(ngModel)]="settings.autoCycle"
               (change)="onSettingChange()"
-              [disabled]="saving"
+              [disabled]="saving || true"
             ></mat-slide-toggle>
           </div>
 
@@ -100,7 +100,7 @@
                 max="60"
                 step="5"
                 class="cycle-slider"
-                [disabled]="!settings.autoCycle || saving"
+                [disabled]="!settings.autoCycle || saving || true"
               >
                 <input
                   matSliderThumb
@@ -125,7 +125,7 @@
             <mat-slide-toggle
               [(ngModel)]="settings.showVolume"
               (change)="onSettingChange()"
-              [disabled]="saving"
+              [disabled]="saving || true"
             ></mat-slide-toggle>
           </div>
 
@@ -144,7 +144,7 @@
               <mat-slide-toggle
                 [(ngModel)]="settings.enableNotifications"
                 (change)="onSettingChange()"
-                [disabled]="saving"
+                [disabled]="saving || true"
               ></mat-slide-toggle>
               <button
                 mat-stroked-button
@@ -185,6 +185,7 @@
             </div>
             <mat-button-toggle-group
               [(ngModel)]="displaySettings.defaultTimeRange"
+              [disabled]="true"
               (change)="
                 onDisplaySettingChange('defaultTimeRange', $event.value)
               "
@@ -212,6 +213,7 @@
             </div>
             <mat-button-toggle-group
               [(ngModel)]="displaySettings.defaultChartType"
+              [disabled]="true"
               (change)="
                 onDisplaySettingChange('defaultChartType', $event.value)
               "
@@ -239,6 +241,7 @@
             </div>
             <mat-slide-toggle
               [(ngModel)]="displaySettings.showGridLines"
+              [disabled]="true"
               (change)="
                 onDisplaySettingChange(
                   'showGridLines',
@@ -261,6 +264,7 @@
             </div>
             <mat-slide-toggle
               [(ngModel)]="displaySettings.showLegend"
+              [disabled]="true"
               (change)="
                 onDisplaySettingChange('showLegend', displaySettings.showLegend)
               "
@@ -294,6 +298,7 @@
             </div>
             <mat-slide-toggle
               [(ngModel)]="displaySettings.reduceAnimations"
+              [disabled]="true"
               (change)="
                 onDisplaySettingChange(
                   'reduceAnimations',
@@ -316,11 +321,13 @@
             </div>
             <mat-button-toggle-group
               [(ngModel)]="displaySettings.dataRefreshRate"
+              [disabled]="true"
               (change)="onDisplaySettingChange('dataRefreshRate', $event.value)"
               class="refresh-rate-toggle"
             >
               <mat-button-toggle
                 *ngFor="let rate of refreshRateOptions"
+                [disabled]="true"
                 [value]="rate.value"
               >
                 {{ rate.label }}
@@ -341,6 +348,7 @@
             </div>
             <mat-slide-toggle
               [(ngModel)]="displaySettings.compactMode"
+              [disabled]="true"
               (change)="
                 onDisplaySettingChange(
                   'compactMode',
@@ -356,7 +364,11 @@
 
   <!-- Action Buttons -->
   <div class="action-buttons" *ngIf="!loading">
-    <button mat-stroked-button (click)="resetToDefaults()" [disabled]="saving">
+    <button
+      mat-stroked-button
+      (click)="resetToDefaults()"
+      [disabled]="saving || true"
+    >
       <mat-icon>restart_alt</mat-icon>
       Reset to Defaults
     </button>

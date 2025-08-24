@@ -52,6 +52,7 @@ interface NormalizedDataSet {
   fill: boolean;
   tension: number;
   borderWidth: number;
+  borderDash?: number[];
   pointRadius: number;
   pointHoverRadius: number;
 }
@@ -1075,9 +1076,17 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.loadChartData();
   }
 
-  toggleBenchmark(): void {
-    this.showBenchmark = !this.showBenchmark;
-    this.createNormalizedData();
+  async toggleBenchmark(): Promise<void> {
+    if (this.showBenchmark) {
+      // Add real SPY data
+      await this.addRealSPYBenchmark();
+    } else {
+      // Remove SPY from the normalized data
+      this.normalizedData = this.normalizedData.filter(
+        (dataset) => dataset.label !== 'S&P 500'
+      );
+      this._updateComparisonChart();
+    }
   }
 
   onViewModeChange(mode: 'comparison' | 'heatmap' | 'correlation'): void {
@@ -1176,6 +1185,82 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       count: dataPoints.length,
       data: dataPoints,
     };
+  }
+
+  private async addRealSPYBenchmark(): Promise<void> {
+    try {
+      // Show loading state
+      this.loading = true;
+
+      // Fetch SPY data from your backend
+      const response = await fetch(
+        `http://localhost:3000/api/stocks/SPY/history?range=${this.selectedTimeRange}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch SPY data');
+      }
+
+      const spyData = await response.json();
+
+      // Check if SPY data exists
+      if (!spyData || !spyData.data || spyData.data.length === 0) {
+        console.error('No SPY data available');
+        this.showBenchmark = false;
+        alert('SPY data not available. Please ensure SPY is in your database.');
+        return;
+      }
+
+      // Define the type for normalized data points
+      interface NormalizedPoint {
+        x: string;
+        y: number;
+      }
+
+      // Normalize SPY data with proper typing
+      const firstPrice: number = spyData.data[0].close;
+      const normalizedSPYData: NormalizedPoint[] = spyData.data.map(
+        (point: any) => ({
+          x: point.date,
+          y: ((point.close - firstPrice) / firstPrice) * 100,
+        })
+      );
+
+      // Create SPY dataset with ALL required properties and proper typing
+      const spyDataset: NormalizedDataSet = {
+        label: 'S&P 500',
+        data: normalizedSPYData.map((d: NormalizedPoint) => d.y), // Explicit type
+        borderColor: '#FF9800', // Orange color for SPY
+        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+        borderWidth: 3, // Thicker line
+        borderDash: [5, 5], // Dashed line to distinguish
+        pointRadius: 0,
+        pointHoverRadius: 6, // Required property
+        tension: 0.2,
+        fill: false,
+      };
+
+      // Add to normalized data
+      this.normalizedData = [...this.normalizedData, spyDataset];
+
+      // Update chart labels if needed with proper typing
+      if (this.chartLabels.length === 0 && spyData.data.length > 0) {
+        this.chartLabels = spyData.data.map((d: any) =>
+          this.formatDateLabel(d.date)
+        );
+      }
+
+      // Update the chart
+      this._updateComparisonChart();
+    } catch (error) {
+      console.error('Error fetching SPY data:', error);
+      this.showBenchmark = false;
+      alert(
+        'Unable to load S&P 500 data. Make sure SPY is in your stock list.'
+      );
+    } finally {
+      this.loading = false;
+    }
   }
 
   private getDataPointsForRange(): number {

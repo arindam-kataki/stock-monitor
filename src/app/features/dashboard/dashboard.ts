@@ -1362,6 +1362,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
    * US Markets: 9:30 AM - 4:00 PM ET, Monday-Friday
    */
   isMarketOpen(): boolean {
+    return true;
     const now = new Date();
 
     // Convert to ET (Eastern Time)
