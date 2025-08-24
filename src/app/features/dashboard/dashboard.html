@@ -7,7 +7,29 @@
         <mat-icon>dashboard</mat-icon>
         Dashboard
       </h2>
-      <!-- NO subtitle, NO header-actions -->
+
+      <div class="header-indicators">
+        <!-- Market Status Indicator -->
+        <div
+          class="market-status"
+          [class.open]="isMarketOpen()"
+          [class.closed]="!isMarketOpen()"
+        >
+          <mat-icon class="status-icon">
+            {{ isMarketOpen() ? "trending_up" : "trending_flat" }}
+          </mat-icon>
+          <span class="status-text">Market {{ getMarketStatus() }}</span>
+          <span class="next-change" *ngIf="getNextMarketChange()">
+            {{ getNextMarketChange() }}
+          </span>
+        </div>
+
+        <!-- Timezone Indicator -->
+        <div class="timezone-indicator">
+          <mat-icon class="time-icon">schedule</mat-icon>
+          <span class="timezone-text">{{ getFullTimezoneDisplay() }}</span>
+        </div>
+      </div>
     </div>
   </div>
 

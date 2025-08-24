@@ -239,7 +239,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadChartData(): void {
+  private _loadChartData(): void {
     // Generate mock data
     this.stockChartData.clear();
 
@@ -263,6 +263,56 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     // when normalizedData is populated
   }
 
+  private loadChartData(): void {
+    if (this.selectedStocks.length === 0) {
+      this.loading = false;
+      return;
+    }
+
+    this.loading = true;
+    this.stockChartData.clear();
+
+    let loadedCount = 0;
+    const totalStocks = this.selectedStocks.length;
+
+    // Load REAL data from the backend for each stock
+    for (const stock of this.selectedStocks) {
+      this.stockDataService
+        .getChartData(stock.symbol, this.selectedTimeRange)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (data) => {
+            console.log(`Loaded real data for ${stock.symbol}:`, data);
+            this.stockChartData.set(stock.symbol, data);
+
+            loadedCount++;
+
+            // When all stocks are loaded, process the data
+            if (loadedCount === totalStocks) {
+              this.createNormalizedData();
+              this.createHeatmapData();
+              this.calculateMetrics();
+              this.calculateCorrelations();
+              this.loading = false;
+            }
+          },
+          error: (error) => {
+            console.error(`Error loading data for ${stock.symbol}:`, error);
+            loadedCount++;
+
+            // Still continue if some stocks fail
+            if (loadedCount === totalStocks) {
+              this.createNormalizedData();
+              this.createHeatmapData();
+              this.calculateMetrics();
+              this.calculateCorrelations();
+              this.loading = false;
+            }
+          },
+        });
+    }
+  }
+
   // ============== NORMALIZED COMPARISON ==============
 
   private createNormalizedData(): void {
@@ -274,35 +324,98 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     console.log('createNormalizedData called');
     console.log('selectedStocks:', this.selectedStocks.length);
 
-    // Get the shortest dataset length
+    // Get the shortest dataset length (ensure we have data)
     let minDataPoints = Infinity;
+    let hasValidData = false;
+
     for (const stock of this.selectedStocks) {
       const data = this.stockChartData.get(stock.symbol);
-      if (data && data.data.length < minDataPoints) {
-        minDataPoints = data.data.length;
+      if (data && data.data && data.data.length > 0) {
+        hasValidData = true;
+        if (data.data.length < minDataPoints) {
+          minDataPoints = data.data.length;
+        }
       }
     }
 
-    // Create labels from first stock's data
+    // If no valid data found, exit early
+    if (!hasValidData || minDataPoints === Infinity) {
+      console.warn('No valid chart data found for normalization');
+      return;
+    }
+
+    console.log('Min data points across all stocks:', minDataPoints);
+
+    // Create labels from the actual data points (not generateSmartLabels)
     const firstStockData = this.stockChartData.get(
       this.selectedStocks[0].symbol
     );
-    if (firstStockData) {
+    if (
+      firstStockData &&
+      firstStockData.data &&
+      firstStockData.data.length > 0
+    ) {
+      // Use actual data to create labels - MATCH THE DATA LENGTH
       const dataSlice = firstStockData.data.slice(0, minDataPoints);
-      this.chartLabels = this.generateSmartLabels(this.selectedTimeRange);
+
+      // Create labels for each actual data point
+      this.chartLabels = dataSlice.map((point, index) => {
+        const date = new Date(point.date || point.timestamp || '');
+
+        // Show fewer labels to avoid crowding
+        // For 262 points (5Y), show every 10th label (~26 labels)
+        // For shorter ranges, show more labels
+        let showLabel = false;
+        if (minDataPoints > 100) {
+          showLabel = index % 10 === 0; // Every 10th for long ranges
+        } else if (minDataPoints > 50) {
+          showLabel = index % 5 === 0; // Every 5th for medium ranges
+        } else if (minDataPoints > 20) {
+          showLabel = index % 2 === 0; // Every 2nd for short ranges
+        } else {
+          showLabel = true; // Show all for very short ranges
+        }
+
+        return showLabel ? this.formatDateLabel(date) : '';
+      });
     }
+
+    console.log(
+      'Created labels:',
+      this.chartLabels.length,
+      'labels for',
+      minDataPoints,
+      'data points'
+    );
 
     // Create normalized dataset for each stock
     this.selectedStocks.forEach((stock, index) => {
       const data = this.stockChartData.get(stock.symbol);
-      if (!data) return;
 
-      const basePrice = data.data[0].close;
+      // Skip if no data or empty data
+      if (!data || !data.data || data.data.length === 0) {
+        console.warn(`No data for ${stock.symbol}, skipping normalization`);
+        return;
+      }
+
+      // Ensure we have a valid base price
+      const basePrice = data.data[0]?.close;
+      if (!basePrice || basePrice === 0) {
+        console.warn(`Invalid base price for ${stock.symbol}, skipping`);
+        return;
+      }
+
+      // Calculate normalized values - IMPORTANT: slice to minDataPoints
       const normalizedValues = data.data
-        .slice(0, minDataPoints)
+        .slice(0, minDataPoints) // Ensure all datasets have same length
         .map((point) => {
-          return ((point.close - basePrice) / basePrice) * 100;
+          const closePrice = point?.close || basePrice;
+          return ((closePrice - basePrice) / basePrice) * 100;
         });
+
+      console.log(
+        `${stock.symbol}: ${normalizedValues.length} normalized values`
+      );
 
       this.normalizedData.push({
         label: stock.symbol,
@@ -318,18 +431,26 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     });
 
     // Add benchmark if enabled
-    if (this.showBenchmark) {
+    if (this.showBenchmark && this.chartLabels.length > 0) {
       this.addBenchmarkData();
     }
 
-    this.updateComparisonChart();
-
-    console.log('normalizedData created:', this.normalizedData.length);
-    console.log('chartLabels:', this.chartLabels.length);
+    console.log('Final check:');
+    console.log('- Labels:', this.chartLabels.length);
+    console.log('- Datasets:', this.normalizedData.length);
+    if (this.normalizedData.length > 0) {
+      console.log(
+        '- Data points per dataset:',
+        this.normalizedData[0].data.length
+      );
+    }
 
     if (this.normalizedData.length > 0) {
-      console.log('Calling updateComparisonChart...');
-      this.updateComparisonChart();
+      // Add a small delay to ensure DOM is ready
+      setTimeout(() => {
+        console.log('Calling updateComparisonChart after delay...');
+        this.updateComparisonChart();
+      }, 100);
     } else {
       console.log('No normalized data to render');
     }
@@ -1096,6 +1217,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private formatDateLabel(date: Date): string {
+    if (!date || isNaN(date.getTime())) {
+      return '';
+    }
+
     const options: Intl.DateTimeFormatOptions = {};
 
     switch (this.selectedTimeRange) {
@@ -1104,15 +1229,31 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         options.minute = '2-digit';
         break;
       case '5D':
-        options.weekday = 'short';
+        options.month = 'short';
+        options.day = 'numeric';
         break;
       case '1M':
         options.month = 'short';
         options.day = 'numeric';
         break;
-      default:
+      case '3M':
+        options.month = 'short';
+        options.day = 'numeric';
+        break;
+      case '6M':
         options.month = 'short';
         options.year = '2-digit';
+        break;
+      case '1Y':
+        options.month = 'short';
+        options.year = '2-digit';
+        break;
+      case '5Y':
+        options.year = 'numeric';
+        break;
+      default:
+        options.month = 'short';
+        options.day = 'numeric';
     }
 
     return date.toLocaleDateString('en-US', options);

@@ -138,6 +138,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   combinedChartData: CombinedChartData | null = null; // Like analytics' normalizedData
   private combinedLabels: string[] = []; // Like analytics' chartLabels
   private combinedDatasets: any[] = [];
+  currentPrices: Map<
+    string,
+    { price: number; change: number; changePercent: number; volume: number }
+  > = new Map();
 
   realPrices: Map<string, any> = new Map();
   isFetchingPrices = false;
@@ -674,6 +678,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   loadChartDataForStocks(): void {
     console.log('loadChartDataForStocks called');
 
+    this.loadCurrentPrices();
+
     if (this.selectedStocks.length === 0) {
       this.combinedChartData = null;
       return;
@@ -702,11 +708,61 @@ export class DashboardComponent implements OnInit, OnDestroy {
               console.log('All chart data loaded, updating combined chart');
               this.updateCombinedChartData();
               this.calculateStatistics();
+              this.updateDataSource();
             }
           },
           error: (error) => {
             console.error(
               `Error loading chart data for ${stock.symbol}:`,
+              error
+            );
+            console.error(
+              `Error loading chart data for ${stock.symbol}:`,
+              error
+            );
+            loadedCount++;
+            if (loadedCount === totalStocks) {
+              this.calculateStatistics();
+              this.updateDataSource();
+            }
+          },
+        });
+    });
+  }
+
+  private loadCurrentPrices(): void {
+    this.selectedStocks.forEach((stock) => {
+      // Always fetch 1D data for current prices
+      this.stockDataService
+        .getChartData(stock.symbol, '1D')
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (data) => {
+            if (data.data && data.data.length > 0) {
+              const latestData = data.data[data.data.length - 1];
+              const firstData = data.data[0];
+
+              // Calculate change from start of day
+              const change = latestData.close - firstData.close;
+              const changePercent = (change / firstData.close) * 100;
+
+              this.currentPrices.set(stock.symbol, {
+                price: latestData.close,
+                change: change,
+                changePercent: changePercent,
+                volume: latestData.volume,
+              });
+
+              // Update stock object with current values
+              stock.price = latestData.close;
+              stock.change = change;
+              stock.changePercent = changePercent;
+              stock.volume = latestData.volume;
+            }
+          },
+          error: (error) => {
+            console.error(
+              `Error loading current prices for ${stock.symbol}:`,
               error
             );
           },
@@ -938,16 +994,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
           break;
       }
 
-      return direction === 'desc' ||
+      const shouldReverse =
+        direction === 'desc' ||
         direction === 'worst' ||
-        direction === 'low'
-        ? -compareValue
-        : compareValue;
+        direction === 'high' ||
+        direction === 'best';
+
+      return shouldReverse ? -compareValue : compareValue;
     });
 
     if (this.stockDataSource) {
       this.stockDataSource.data = [...this.selectedStocks];
     }
+
+    this.updateDataSource();
 
     // If sparklines are visible, re-render them after sorting
     if (this.viewMode === 'list') {
@@ -1220,6 +1280,233 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return colors[index % colors.length];
   }
 
+  /**
+   * Get the full timezone display string
+   * Shows both the timezone name and current offset from UTC
+   */
+  _getFullTimezoneDisplay(): string {
+    const now = new Date();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Get the UTC offset
+    const offsetMinutes = now.getTimezoneOffset();
+    const offsetHours = Math.abs(Math.floor(offsetMinutes / 60));
+    const offsetMins = Math.abs(offsetMinutes % 60);
+    const offsetSign = offsetMinutes <= 0 ? '+' : '-';
+
+    // Format the offset string
+    const offsetStr = `UTC${offsetSign}${offsetHours
+      .toString()
+      .padStart(2, '0')}:${offsetMins.toString().padStart(2, '0')}`;
+
+    // Get a more readable timezone name
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZoneName: 'short',
+      timeZone: timeZone,
+    });
+
+    const parts = formatter.formatToParts(now);
+    const tzName =
+      parts.find((part) => part.type === 'timeZoneName')?.value || timeZone;
+
+    // Return formatted string
+    return `${tzName} (${offsetStr})`;
+  }
+
+  // Alternative simpler version if you prefer:
+  getSimpleTimezoneDisplay(): string {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZoneName: 'long',
+    });
+    const parts = formatter.formatToParts(new Date());
+    return (
+      parts.find((part) => part.type === 'timeZoneName')?.value || 'Local Time'
+    );
+  }
+
+  /**
+   * Get the full timezone display string
+   * Shows both the timezone name and current offset from UTC
+   */
+  getFullTimezoneDisplay(): string {
+    const now = new Date();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Get the UTC offset
+    const offsetMinutes = now.getTimezoneOffset();
+    const offsetHours = Math.abs(Math.floor(offsetMinutes / 60));
+    const offsetMins = Math.abs(offsetMinutes % 60);
+    const offsetSign = offsetMinutes <= 0 ? '+' : '-';
+
+    // Format the offset string
+    const offsetStr = `UTC${offsetSign}${offsetHours
+      .toString()
+      .padStart(2, '0')}:${offsetMins.toString().padStart(2, '0')}`;
+
+    // Get a more readable timezone name
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZoneName: 'short',
+      timeZone: timeZone,
+    });
+
+    const parts = formatter.formatToParts(now);
+    const tzName =
+      parts.find((part) => part.type === 'timeZoneName')?.value || timeZone;
+
+    // Return formatted string
+    return `${tzName} (${offsetStr})`;
+  }
+
+  /**
+   * Check if the market is currently open
+   * US Markets: 9:30 AM - 4:00 PM ET, Monday-Friday
+   */
+  isMarketOpen(): boolean {
+    const now = new Date();
+
+    // Convert to ET (Eastern Time)
+    const etTime = new Date(
+      now.toLocaleString('en-US', { timeZone: 'America/New_York' })
+    );
+
+    const day = etTime.getDay();
+    const hour = etTime.getHours();
+    const minute = etTime.getMinutes();
+    const currentMinutes = hour * 60 + minute;
+
+    // Skip weekends (0 = Sunday, 6 = Saturday)
+    if (day === 0 || day === 6) {
+      return false;
+    }
+
+    // Check if it's a market holiday
+    if (this.isMarketHoliday(etTime)) {
+      return false;
+    }
+
+    // Market hours: 9:30 AM - 4:00 PM ET
+    const marketOpen = 9 * 60 + 30; // 570 minutes
+    const marketClose = 16 * 60; // 960 minutes
+
+    return currentMinutes >= marketOpen && currentMinutes < marketClose;
+  }
+
+  /**
+   * Check if today is a US market holiday
+   */
+  private isMarketHoliday(date: Date): boolean {
+    const year = date.getFullYear();
+    const holidays = [
+      `${year}-01-01`, // New Year's Day
+      `${year}-01-15`, // MLK Day (approx - 3rd Monday of Jan)
+      `${year}-02-19`, // Presidents Day (approx - 3rd Monday of Feb)
+      `${year}-05-27`, // Memorial Day (approx - last Monday of May)
+      `${year}-06-19`, // Juneteenth
+      `${year}-07-04`, // Independence Day
+      `${year}-09-02`, // Labor Day (approx - 1st Monday of Sep)
+      `${year}-11-28`, // Thanksgiving (approx - 4th Thursday of Nov)
+      `${year}-12-25`, // Christmas
+    ];
+
+    const dateStr = date.toISOString().split('T')[0];
+    return holidays.includes(dateStr);
+  }
+
+  /**
+   * Get market status text
+   */
+  getMarketStatus(): string {
+    const now = new Date();
+    const etTime = new Date(
+      now.toLocaleString('en-US', { timeZone: 'America/New_York' })
+    );
+
+    const day = etTime.getDay();
+    const hour = etTime.getHours();
+    const minute = etTime.getMinutes();
+    const currentMinutes = hour * 60 + minute;
+
+    // Weekend
+    if (day === 0 || day === 6) {
+      return 'Closed (Weekend)';
+    }
+
+    // Holiday
+    if (this.isMarketHoliday(etTime)) {
+      return 'Closed (Holiday)';
+    }
+
+    const marketOpen = 9 * 60 + 30; // 570 minutes
+    const marketClose = 16 * 60; // 960 minutes
+    const afterHoursClose = 20 * 60; // 1200 minutes (8 PM)
+    const preMarketOpen = 4 * 60; // 240 minutes (4 AM)
+
+    if (currentMinutes >= marketOpen && currentMinutes < marketClose) {
+      return 'Open';
+    } else if (currentMinutes >= preMarketOpen && currentMinutes < marketOpen) {
+      return 'Pre-Market';
+    } else if (
+      currentMinutes >= marketClose &&
+      currentMinutes < afterHoursClose
+    ) {
+      return 'After-Hours';
+    } else {
+      return 'Closed';
+    }
+  }
+
+  /**
+   * Get the next market event time
+   */
+  getNextMarketChange(): string | null {
+    const now = new Date();
+    const etTime = new Date(
+      now.toLocaleString('en-US', { timeZone: 'America/New_York' })
+    );
+
+    const hour = etTime.getHours();
+    const minute = etTime.getMinutes();
+    const currentMinutes = hour * 60 + minute;
+    const day = etTime.getDay();
+
+    // Skip weekends
+    if (day === 0 || day === 6) {
+      return 'Opens Monday 9:30 AM ET';
+    }
+
+    const marketOpen = 9 * 60 + 30;
+    const marketClose = 16 * 60;
+
+    if (currentMinutes < marketOpen) {
+      const minutesUntil = marketOpen - currentMinutes;
+      const hours = Math.floor(minutesUntil / 60);
+      const mins = minutesUntil % 60;
+
+      if (hours > 0) {
+        return `Opens in ${hours}h ${mins}m`;
+      } else {
+        return `Opens in ${mins}m`;
+      }
+    } else if (currentMinutes >= marketOpen && currentMinutes < marketClose) {
+      const minutesUntil = marketClose - currentMinutes;
+      const hours = Math.floor(minutesUntil / 60);
+      const mins = minutesUntil % 60;
+
+      if (hours > 0) {
+        return `Closes in ${hours}h ${mins}m`;
+      } else {
+        return `Closes in ${mins}m`;
+      }
+    } else {
+      // After market close
+      if (day === 5) {
+        return 'Opens Monday 9:30 AM ET';
+      } else {
+        return 'Opens tomorrow 9:30 AM ET';
+      }
+    }
+  }
+
   private formatDateLabel(date: Date): string {
     const options: Intl.DateTimeFormatOptions = {};
 
@@ -1286,6 +1573,59 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ============== STATISTICS ==============
 
   calculateStatistics(): void {
+    if (this.selectedStocks.length === 0) {
+      this.totalMarketCap = 0;
+      this.averageChange = 0;
+      this.topGainer = null;
+      this.topLoser = null;
+      return;
+    }
+
+    // Use current prices for statistics
+    let totalChange = 0;
+    let maxChange = -Infinity;
+    let minChange = Infinity;
+
+    this.selectedStocks.forEach((stock) => {
+      const current = this.currentPrices.get(stock.symbol);
+      const changePercent = current?.changePercent || stock.changePercent || 0;
+
+      totalChange += changePercent;
+
+      if (changePercent > maxChange) {
+        maxChange = changePercent;
+        this.topGainer = stock;
+      }
+
+      if (changePercent < minChange) {
+        minChange = changePercent;
+        this.topLoser = stock;
+      }
+    });
+
+    this.averageChange = totalChange / this.selectedStocks.length;
+
+    // Calculate total market cap
+    this.totalMarketCap = this.selectedStocks.reduce((total, stock) => {
+      return total + (this.parseMarketCap(stock.marketCap) || 0);
+    }, 0);
+
+    console.log('Statistics updated:', {
+      totalMarketCap: this.totalMarketCap,
+      averageChange: this.averageChange,
+      topGainer: this.topGainer?.symbol,
+      topLoser: this.topLoser?.symbol,
+    });
+  }
+
+  // 6. Add method to update data source
+  private updateDataSource(): void {
+    if (this.stockDataSource) {
+      this.stockDataSource.data = [...this.selectedStocks];
+    }
+  }
+
+  _calculateStatistics(): void {
     if (this.selectedStocks.length === 0) return;
 
     // Calculate total market cap

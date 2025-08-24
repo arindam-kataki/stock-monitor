@@ -182,7 +182,7 @@ export class StockDataService {
   // ============== CHART DATA ==============
 
   // Get chart data from backend
-  getChartData(symbol: string, range: string): Observable<ChartData> {
+  _getChartData(symbol: string, range: string): Observable<ChartData> {
     return this.http
       .get<ChartData>(`${this.apiUrl}/stocks/${symbol}/chart/${range}`)
       .pipe(
@@ -194,6 +194,62 @@ export class StockDataService {
           )
         ),
         catchError(this.handleError)
+      );
+  }
+
+  // In src/app/core/services/stock-data/stock-data.service.ts
+  // This is a SAFE update that checks if the API is available
+
+  getChartData(symbol: string, range: TimeRange): Observable<ChartData> {
+    // Try to use the REAL API first
+    return this.http
+      .get<ChartData>(`${this.apiUrl}/stocks/${symbol}/chart/${range}`)
+      .pipe(
+        map((response) => {
+          console.log(
+            `Loaded real data for ${symbol}/${range}:`,
+            response.count,
+            'points'
+          );
+
+          // Ensure the data format matches what components expect
+          return {
+            symbol: response.symbol || symbol,
+            range: response.range || range,
+            count: response.count || response.data?.length || 0,
+            data: (response.data || []).map((point: any) => ({
+              // Handle both date and timestamp fields from backend
+              date: point.date || point.timestamp,
+              timestamp: point.timestamp || point.date,
+              open: point.open,
+              high: point.high,
+              low: point.low,
+              close: point.close,
+              volume: point.volume,
+            })),
+          };
+        }),
+        catchError((error) => {
+          // Log the error so we know what's happening
+          console.error(
+            `Error fetching chart data for ${symbol}/${range}:`,
+            error
+          );
+
+          // Check if it's a connection error (backend not running)
+          if (error.status === 0 || error.status === 404) {
+            console.warn('Backend API not available, returning empty data');
+          }
+
+          // Return empty data instead of throwing error
+          // This prevents the app from breaking
+          return of({
+            symbol: symbol,
+            range: range,
+            count: 0,
+            data: [],
+          });
+        })
       );
   }
 

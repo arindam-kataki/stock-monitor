@@ -383,17 +383,51 @@ export class StockDatabase {
   getChartData(symbol: string, range: string): any[] {
     switch (range) {
       case '1D':
-        // Return 5-minute data for today
-        return this.db
+        // First try to get today's 5-minute data
+        let intradayData = this.db
           .prepare(
             `
-          SELECT * FROM stocks_5min 
-          WHERE symbol = ? 
-            AND timestamp >= datetime('now', 'start of day')
-          ORDER BY timestamp ASC
-        `
+      SELECT * FROM stocks_5min 
+      WHERE symbol = ? 
+        AND timestamp >= datetime('now', 'start of day')
+      ORDER BY timestamp ASC
+    `
           )
           .all(symbol);
+
+        // If no data for today, get the most recent day's data
+        if (!intradayData || intradayData.length === 0) {
+          console.log(
+            `No data for today, getting most recent day for ${symbol}`
+          );
+
+          // Get the most recent date that has data
+          const result: any = this.db
+            .prepare(
+              `
+        SELECT DATE(MAX(timestamp)) as latest_date
+        FROM stocks_5min 
+        WHERE symbol = ?
+      `
+            )
+            .get(symbol);
+
+          if (result && result['latest_date']) {
+            // Get all data from that most recent day
+            intradayData = this.db
+              .prepare(
+                `
+          SELECT * FROM stocks_5min 
+          WHERE symbol = ? 
+            AND DATE(timestamp) = ?
+          ORDER BY timestamp ASC
+        `
+              )
+              .all(symbol, result['latest_date']);
+          }
+        }
+
+        return intradayData || [];
 
       case '5D':
         // Get 5-minute data and aggregate to 30-minute
