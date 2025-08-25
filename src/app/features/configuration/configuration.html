@@ -141,6 +141,7 @@
               <!-- Active Toggle -->
               <mat-slide-toggle
                 [(ngModel)]="ribbon.isActive"
+                [disabled]="true"
                 (change)="toggleRibbonActive(ribbon)"
                 matTooltip="Toggle ribbon active/inactive"
                 class="ribbon-toggle"
@@ -165,6 +166,7 @@
 
               <button
                 mat-icon-button
+                [disabled]="true"
                 (click)="duplicateRibbon(ribbon)"
                 matTooltip="Duplicate ribbon"
               >
@@ -174,6 +176,7 @@
               <button
                 mat-icon-button
                 color="warn"
+                [disabled]="true"
                 (click)="deleteRibbon(ribbon)"
                 matTooltip="Delete ribbon"
               >

@@ -221,7 +221,7 @@
     mat-raised-button
     color="primary"
     (click)="save()"
-    [disabled]="!isFormValid"
+    [disabled]="!isFormValid || true"
   >
     <mat-icon>{{ isEditMode ? "save" : "add" }}</mat-icon>
     {{ isEditMode ? "Update" : "Create" }} Watch List
