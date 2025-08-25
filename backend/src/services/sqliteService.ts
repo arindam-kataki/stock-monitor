@@ -430,19 +430,26 @@ export class StockDatabase {
         return intradayData || [];
 
       case '5D':
-        // Get 5-minute data and aggregate to 30-minute
-        const fiveMinData = this.db
+        const fiveDaysData = this.db
           .prepare(
             `
-          SELECT * FROM stocks_5min 
-          WHERE symbol = ? 
-            AND timestamp >= datetime('now', '-5 days')
-          ORDER BY timestamp ASC
-        `
+      SELECT 
+        date as timestamp,
+        open,
+        high,
+        low,
+        close,
+        volume
+      FROM stocks_daily 
+      WHERE symbol = ?
+      ORDER BY date DESC
+      LIMIT 5
+    `
           )
           .all(symbol);
 
-        return this.aggregateTo30Min(fiveMinData);
+        // Reverse to get chronological order (oldest to newest)
+        return fiveDaysData.reverse();
 
       case '1M':
         return this.db

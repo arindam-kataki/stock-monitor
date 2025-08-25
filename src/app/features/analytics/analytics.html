@@ -160,6 +160,7 @@
         <div class="benchmark-toggle" *ngIf="viewMode === 'comparison'">
           <mat-slide-toggle
             [(ngModel)]="showBenchmark"
+            [disabled]="true"
             (change)="toggleBenchmark()"
             color="primary"
           >

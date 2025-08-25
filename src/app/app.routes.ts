@@ -34,6 +34,13 @@ export const routes: Routes = [
       import('./features/display/display').then((m) => m.DisplayComponent),
   },
   {
+    path: 'technology', // ADD THIS ROUTE
+    loadComponent: () =>
+      import('./features/technology/technology').then(
+        (m) => m.TechnologyComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: '/watches',
   },

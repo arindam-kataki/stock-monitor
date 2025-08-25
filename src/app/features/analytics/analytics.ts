@@ -1192,9 +1192,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       // Show loading state
       this.loading = true;
 
-      // Fetch SPY data from your backend
+      // Use the CORRECT endpoint that matches your backend
+      // Your backend has: /api/stocks/:symbol/chart/:range
       const response = await fetch(
-        `http://localhost:3000/api/stocks/SPY/history?range=${this.selectedTimeRange}`
+        `http://localhost:3000/api/stocks/SPY/chart/${this.selectedTimeRange}`
       );
 
       if (!response.ok) {
@@ -1202,40 +1203,36 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
 
       const spyData = await response.json();
+      console.log('SPY data received:', spyData); // Debug log
 
       // Check if SPY data exists
       if (!spyData || !spyData.data || spyData.data.length === 0) {
         console.error('No SPY data available');
         this.showBenchmark = false;
-        alert('SPY data not available. Please ensure SPY is in your database.');
+
+        // More helpful error message
+        alert(
+          'SPY data not available. Run: npx ts-node src/scripts/initial-data-load.ts to populate SPY data'
+        );
         return;
       }
 
-      // Define the type for normalized data points
-      interface NormalizedPoint {
-        x: string;
-        y: number;
-      }
-
-      // Normalize SPY data with proper typing
+      // Normalize SPY data
       const firstPrice: number = spyData.data[0].close;
-      const normalizedSPYData: NormalizedPoint[] = spyData.data.map(
-        (point: any) => ({
-          x: point.date,
-          y: ((point.close - firstPrice) / firstPrice) * 100,
-        })
+      const normalizedValues: number[] = spyData.data.map(
+        (point: any) => ((point.close - firstPrice) / firstPrice) * 100
       );
 
-      // Create SPY dataset with ALL required properties and proper typing
+      // Create SPY dataset with proper styling
       const spyDataset: NormalizedDataSet = {
-        label: 'S&P 500',
-        data: normalizedSPYData.map((d: NormalizedPoint) => d.y), // Explicit type
-        borderColor: '#FF9800', // Orange color for SPY
+        label: 'S&P 500 (SPY)',
+        data: normalizedValues,
+        borderColor: '#FF9800', // Orange for benchmark
         backgroundColor: 'rgba(255, 152, 0, 0.1)',
-        borderWidth: 3, // Thicker line
-        borderDash: [5, 5], // Dashed line to distinguish
+        borderWidth: 3,
+        borderDash: [5, 5], // Dashed line
         pointRadius: 0,
-        pointHoverRadius: 6, // Required property
+        pointHoverRadius: 6,
         tension: 0.2,
         fill: false,
       };
@@ -1243,10 +1240,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       // Add to normalized data
       this.normalizedData = [...this.normalizedData, spyDataset];
 
-      // Update chart labels if needed with proper typing
+      // Update chart labels if needed
       if (this.chartLabels.length === 0 && spyData.data.length > 0) {
         this.chartLabels = spyData.data.map((d: any) =>
-          this.formatDateLabel(d.date)
+          this.formatDateLabel(d.date || d.timestamp)
         );
       }
 
@@ -1255,11 +1252,35 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error fetching SPY data:', error);
       this.showBenchmark = false;
-      alert(
-        'Unable to load S&P 500 data. Make sure SPY is in your stock list.'
-      );
+
+      // Check if SPY exists in database
+      this.checkSPYAvailability();
     } finally {
       this.loading = false;
+    }
+  }
+
+  // Helper method to check if SPY is available
+  private async checkSPYAvailability(): Promise<void> {
+    try {
+      const response = await fetch('http://localhost:3000/api/stocks/latest');
+      const stocks = await response.json();
+      const spyExists = stocks.some((s: any) => s.symbol === 'SPY');
+
+      if (!spyExists) {
+        console.error('SPY not found in database. To add SPY data:');
+        console.error('1. Add SPY to your seed script');
+        console.error(
+          '2. Run: cd backend && npx ts-node src/scripts/initial-data-load.ts'
+        );
+        alert(
+          'SPY is not in your stock list. Please add SPY to your database to use S&P 500 benchmark.'
+        );
+      } else {
+        alert('SPY exists but has no data for this time range.');
+      }
+    } catch (e) {
+      console.error('Could not check SPY availability:', e);
     }
   }
 

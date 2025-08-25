@@ -1089,8 +1089,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const chartData = this.stockChartData.get(symbol);
     if (!chartData || !chartData.data || chartData.data.length === 0) return 0;
 
-    // Get the last data point's volume
-    return chartData.data[chartData.data.length - 1].volume;
+    // Get last 5 days of data
+    const last5Days = chartData.data.slice(-5);
+
+    // Sum up the volume
+    const totalVolume = last5Days.reduce((sum, dataPoint) => {
+      return sum + (dataPoint.volume || 0);
+    }, 0);
+
+    return totalVolume;
   }
 
   private updateCombinedChartData(): void {

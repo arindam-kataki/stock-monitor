@@ -43,6 +43,7 @@ export class NavigationComponent implements OnInit {
       icon: 'analytics',
       description: 'Stock analytics',
     },
+    { path: '/technology', label: 'Technology', icon: '💻' },
     {
       path: '/display',
       label: 'Display',
